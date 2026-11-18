@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Tenant: toda tabela de negócio carrega companyId.
+model Company {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  createdAt   DateTime     @default(now())
+  users       User[]
+  departments Department[]
+  timeEntries TimeEntry[]
+  auditLogs   AuditLog[]
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  users     User[]
+
+  @@unique([companyId, name])
+}
+
+model User {
+  id           String      @id @default(uuid())
+  companyId    String
+  departmentId String?
+  name         String
+  email        String      @unique
+  passwordHash String
+  role         String      @default("DEVELOPER")
+  jobTitle     String?
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  timeEntries  TimeEntry[]
+
+  @@index([companyId])
+}
+
+/// Registro de ponto. Imutável por desenho: correções viram novos registros + auditoria.
+model TimeEntry {
+  id         String        @id @default(uuid())
+  companyId  String
+  userId     String
+  type       String
+  /// Sempre horário do servidor.
+  recordedAt DateTime      @default(now())
+  note       String?
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+  @@index([companyId, recordedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  companyId String?
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  String?
+  createdAt DateTime @default(now())
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
