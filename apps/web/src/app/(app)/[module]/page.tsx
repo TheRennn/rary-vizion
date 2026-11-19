@@ -10,8 +10,9 @@ const MODULES: Record<string, { title: string; sprint: string; description: stri
   intelligence: { title: 'Vizion Intelligence', sprint: 'Sprint 08', description: 'Relatórios inteligentes, resumos e análise de gargalos.' },
 };
 
-export default function ModulePage({ params }: { params: { module: string } }) {
-  const mod = MODULES[params.module];
+export default async function ModulePage({ params }: { params: Promise<{ module: string }> }) {
+  const { module } = await params;
+  const mod = MODULES[module];
   if (!mod) notFound();
 
   return (

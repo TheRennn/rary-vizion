@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import { hasMinRole } from '@/lib/roles';
-import type { AuthUser, DashboardOverview, DashboardPeriod } from '@/lib/types';
+import type { AuthUser, DashboardOverview, DashboardPeriod, Department } from '@/lib/types';
 
 const REFRESH_MS = 15_000;
 const PERIOD_LABELS: Record<DashboardPeriod, string> = {
@@ -240,6 +240,8 @@ function FeatureUnavailable({ title, description }: { title: string; description
 
 function ExecutiveDashboard({ user }: { user: AuthUser }) {
   const [period, setPeriod] = useState<DashboardPeriod>('30d');
+  const [departmentId, setDepartmentId] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -250,7 +252,9 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
       if (background) setRefreshing(true);
       else setLoading(true);
       try {
-        const data = await api<DashboardOverview>(`/dashboard/overview?period=${period}`);
+        const params = new URLSearchParams({ period });
+        if (departmentId) params.set('departmentId', departmentId);
+        const data = await api<DashboardOverview>(`/dashboard/overview?${params.toString()}`);
         setOverview(data);
         setError(null);
       } catch (e) {
@@ -260,8 +264,16 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
         setRefreshing(false);
       }
     },
-    [period],
+    [period, departmentId],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    api<Department[]>('/departments')
+      .then((result) => { if (!cancelled) setDepartments(result); })
+      .catch(() => { if (!cancelled) setDepartments([]); });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     void load();
@@ -291,6 +303,11 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <label className="sr-only" htmlFor="dashboard-department">Departamento do painel</label>
+          <select id="dashboard-department" value={departmentId} onChange={(event) => { setOverview(null); setDepartmentId(event.target.value); }} className="input w-auto min-w-40">
+            <option value="">Toda a empresa</option>
+            {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
+          </select>
           <label className="sr-only" htmlFor="dashboard-period">Período do painel</label>
           <select
             id="dashboard-period"
@@ -415,7 +432,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
                   <p className="eyebrow">Recent activity</p>
                   <h2 className="mt-1 text-lg font-semibold">Atividade recente</h2>
                 </div>
-                <span className="text-xs text-muted">Eventos registrados</span>
+                <span className="text-xs text-muted">{departmentId ? 'Atividade da empresa' : 'Eventos registrados'}</span>
               </div>
               {overview.activity.length === 0 ? (
                 <p className="text-sm text-muted">Nenhuma atividade registrada até o momento.</p>

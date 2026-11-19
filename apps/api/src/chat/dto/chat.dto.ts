@@ -34,3 +34,17 @@ export class ListMessagesQueryDto {
   @Max(100)
   limit = 50;
 }
+
+export class SearchMessagesQueryDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  q!: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit = 20;
+}

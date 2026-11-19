@@ -6,11 +6,51 @@ import {
 } from '@nestjs/common';
 import { AuthUser } from '../common/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
-import { ListMessagesQueryDto } from './dto/chat.dto';
+import { ListMessagesQueryDto, SearchMessagesQueryDto } from './dto/chat.dto';
 
 @Injectable()
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async searchMessages(user: AuthUser, query: SearchMessagesQueryDto) {
+    const term = query.q.trim();
+    if (term.length < 2) throw new BadRequestException('Digite ao menos dois caracteres para pesquisar');
+
+    const results = await this.prisma.chatMessage.findMany({
+      where: {
+        body: { contains: term },
+        conversation: {
+          companyId: user.companyId,
+          participants: { some: { userId: user.id } },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: query.limit ?? 20,
+      include: {
+        sender: { select: { id: true, name: true } },
+        conversation: {
+          select: {
+            id: true,
+            name: true,
+            participants: {
+              where: { userId: { not: user.id } },
+              take: 1,
+              select: { user: { select: { id: true, name: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    return results.map(({ conversation, ...message }) => ({
+      ...message,
+      conversation: {
+        id: conversation.id,
+        name: conversation.name,
+        peerName: conversation.participants[0]?.user.name ?? conversation.name ?? 'Conversa',
+      },
+    }));
+  }
 
   async listConversations(user: AuthUser) {
     const memberships = await this.prisma.conversationParticipant.findMany({

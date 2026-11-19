@@ -9,6 +9,10 @@ export class SupabaseService implements OnModuleDestroy {
   readonly adminClient: SupabaseClient;
   private readonly configured: boolean;
 
+  get isConfigured(): boolean {
+    return this.configured;
+  }
+
   constructor(config: ConfigService) {
     const url = config.get<string>('SUPABASE_URL');
     const publishableKey = config.get<string>('SUPABASE_PUBLISHABLE_KEY');

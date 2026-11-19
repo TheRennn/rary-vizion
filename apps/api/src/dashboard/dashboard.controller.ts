@@ -12,6 +12,6 @@ export class DashboardController {
   @Get('overview')
   @MinRole(Role.MANAGER)
   overview(@CurrentUser() user: AuthUser, @Query() query: DashboardQueryDto) {
-    return this.dashboard.overview(user, query.period);
+    return this.dashboard.overview(user, query.period, query.departmentId);
   }
 }

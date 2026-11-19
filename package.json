@@ -17,5 +17,10 @@
   "devDependencies": {
     "concurrently": "^9.0.1"
   },
+  "overrides": {
+    "next": {
+      "postcss": "^8.5.33"
+    }
+  },
   "engines": { "node": ">=20" }
 }

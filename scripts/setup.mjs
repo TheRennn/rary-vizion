@@ -9,6 +9,8 @@ function ensureEnv(target, example, requiredLine) {
 }
 
 ensureEnv('apps/api/.env', 'apps/api/.env.example', 'DEV_AUTO_LOGIN="true"');
+ensureEnv('apps/api/.env', 'apps/api/.env.example', 'DATABASE_URL="file:./dev.db"');
+ensureEnv('apps/api/.env', 'apps/api/.env.example', 'JWT_SECRET="development-only-change-this-secret-before-deploying"');
 ensureEnv('apps/web/.env.local', 'apps/web/.env.example', 'NEXT_PUBLIC_DEV_AUTO_LOGIN="true"');
 
 console.log('Preparando banco local e contas demo...');

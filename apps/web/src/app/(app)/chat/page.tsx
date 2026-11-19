@@ -5,6 +5,14 @@ import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import type { ChatConversation, ChatMessage, ChatMessagePage, Employee } from '@/lib/types';
 
+interface ChatSearchResult {
+  id: string;
+  body: string;
+  createdAt: string;
+  sender: { id: string; name: string };
+  conversation: { id: string; name: string | null; peerName: string };
+}
+
 function initials(name: string) {
   return name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
 }
@@ -31,6 +39,10 @@ export default function ChatPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
+  const [messageResults, setMessageResults] = useState<ChatSearchResult[]>([]);
+  const [searchingMessages, setSearchingMessages] = useState(false);
+  const [messageSearchError, setMessageSearchError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -109,6 +121,28 @@ export default function ChatPage() {
     const interval = setInterval(() => void loadConversations(), 10000);
     return () => clearInterval(interval);
   }, [loadConversations]);
+
+  useEffect(() => {
+    const term = messageSearch.trim();
+    setMessageSearchError(null);
+    if (term.length < 2) {
+      setMessageResults([]);
+      setSearchingMessages(false);
+      return;
+    }
+
+    let cancelled = false;
+    setMessageResults([]);
+    setSearchingMessages(true);
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ q: term, limit: '30' });
+      api<ChatSearchResult[]>(`/chat/search?${params.toString()}`)
+        .then((results) => { if (!cancelled) setMessageResults(results); })
+        .catch((e) => { if (!cancelled) setMessageSearchError(e instanceof Error ? e.message : 'Erro ao pesquisar mensagens'); })
+        .finally(() => { if (!cancelled) setSearchingMessages(false); });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [messageSearch]);
 
   async function startConversation(targetUserId: string) {
     try {
@@ -210,10 +244,33 @@ export default function ChatPage() {
               </div>
             </div>
           )}
+
+          <label className="sr-only" htmlFor="chat-message-search">Pesquisar mensagens</label>
+          <input
+            id="chat-message-search"
+            type="search"
+            value={messageSearch}
+            onChange={(event) => setMessageSearch(event.target.value)}
+            placeholder="Pesquisar mensagens..."
+            className="input"
+          />
         </div>
 
         <div className="flex-1 overflow-y-auto p-2">
-          {conversations.map((conversation) => (
+          {messageSearch.trim().length >= 2 ? (
+            <div className="space-y-1">
+              <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-wider text-muted">Resultados da busca</p>
+              {messageSearchError && <p role="alert" className="mx-2 rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-300">{messageSearchError}</p>}
+              {searchingMessages && <p className="px-3 py-4 text-sm text-muted">Pesquisando mensagens…</p>}
+              {!searchingMessages && messageResults.map((result) => (
+                <button key={result.id} type="button" onClick={() => { setSelectedId(result.conversation.id); setMessageSearch(''); }} className="block w-full rounded-xl px-3 py-3 text-left transition-colors hover:bg-white/[0.035]">
+                  <span className="flex items-center justify-between gap-2"><span className="truncate text-xs font-semibold">{result.conversation.peerName}</span><time className="shrink-0 text-[10px] text-muted" dateTime={result.createdAt}>{timeLabel(result.createdAt)}</time></span>
+                  <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted">{result.sender.name}: {result.body}</span>
+                </button>
+              ))}
+              {!searchingMessages && messageResults.length === 0 && <p className="px-3 py-4 text-sm text-muted">Nenhuma mensagem encontrada nas suas conversas.</p>}
+            </div>
+          ) : conversations.map((conversation) => (
             <button
               type="button"
               key={conversation.id}
@@ -237,7 +294,7 @@ export default function ChatPage() {
               </span>
             </button>
           ))}
-          {conversations.length === 0 && (
+          {messageSearch.trim().length < 2 && conversations.length === 0 && (
             <div className="px-4 py-10 text-center">
               <p className="text-sm text-muted">Nenhuma conversa ainda.</p>
               <button type="button" className="btn-ghost mt-4" onClick={() => setPeopleOpen(true)}>Nova conversa</button>

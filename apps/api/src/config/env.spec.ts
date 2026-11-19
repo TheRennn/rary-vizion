@@ -22,3 +22,18 @@ test('rejeita URL inválida do Supabase', () => {
 test('permite iniciar sem Supabase para acessar contas demo', () => {
   assert.deepEqual(validateEnv({}), {});
 });
+
+test('rejeita configuração parcial do Supabase', () => {
+  assert.throws(
+    () => validateEnv({ SUPABASE_URL: 'https://example.supabase.co' }),
+    /Configure SUPABASE_URL/,
+  );
+});
+
+test('exige segredo forte fora do padrão de desenvolvimento em produção', () => {
+  assert.throws(
+    () => validateEnv({ NODE_ENV: 'production', JWT_SECRET: 'development-only-change-this-secret-before-deploying' }),
+    /JWT_SECRET deve ter pelo menos 32 caracteres/,
+  );
+  assert.doesNotThrow(() => validateEnv({ NODE_ENV: 'production', JWT_SECRET: 'a-strong-production-secret-with-more-than-32-chars' }));
+});

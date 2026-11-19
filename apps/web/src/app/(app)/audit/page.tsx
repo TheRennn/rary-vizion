@@ -9,6 +9,9 @@ import type { AuditLog } from '@/lib/types';
 const ACTION_LABEL: Record<string, string> = {
   'time.recorded': 'Registrou ponto',
   'user.created': 'Criou colaborador',
+  'user.updated': 'Atualizou colaborador',
+  'user.archived': 'Arquivou colaborador',
+  'user.reactivated': 'Reativou colaborador',
   'department.created': 'Criou departamento',
   'user.login': 'Acessou o workspace',
 };

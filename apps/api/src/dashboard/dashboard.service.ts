@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuthUser } from '../common/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
 import { statusFromLastEntry } from '../time/time.rules';
@@ -28,7 +28,15 @@ function percentageChange(current: number, previous: number): number | null {
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async overview(user: AuthUser, period: DashboardPeriod) {
+  async overview(user: AuthUser, period: DashboardPeriod, departmentId?: string) {
+    if (departmentId) {
+      const department = await this.prisma.department.findFirst({
+        where: { id: departmentId, companyId: user.companyId },
+        select: { id: true },
+      });
+      if (!department) throw new BadRequestException('Departamento inválido');
+    }
+
     const now = new Date();
     const periodDays = PERIOD_DAYS[period];
     const utcToday = new Date(
@@ -38,10 +46,16 @@ export class DashboardService {
     const elapsedPeriodMs = now.getTime() - from.getTime();
     const previousFrom = new Date(from.getTime() - elapsedPeriodMs);
 
+    const departmentConstraint = departmentId ? { departmentId } : {};
+    const selectedDepartmentConstraint = departmentId ? { id: departmentId } : {};
+    const timeEntryUserConstraint = departmentId
+      ? { user: { companyId: user.companyId, departmentId } }
+      : {};
+
     const [employees, previousEntries, periodEntries, currentHires, previousHires, departments, logs] =
       await Promise.all([
         this.prisma.user.findMany({
-          where: { companyId: user.companyId, active: true },
+          where: { companyId: user.companyId, active: true, ...departmentConstraint },
           orderBy: { name: 'asc' },
           select: {
             id: true,
@@ -55,24 +69,24 @@ export class DashboardService {
           },
         }),
         this.prisma.timeEntry.findMany({
-          where: { companyId: user.companyId, recordedAt: { lt: previousFrom } },
+          where: { companyId: user.companyId, recordedAt: { lt: previousFrom }, ...timeEntryUserConstraint },
           orderBy: [{ recordedAt: 'desc' }, { id: 'desc' }],
           distinct: ['userId'],
           select: { id: true, userId: true, type: true, recordedAt: true },
         }),
         this.prisma.timeEntry.findMany({
-          where: { companyId: user.companyId, recordedAt: { gte: previousFrom, lte: now } },
+          where: { companyId: user.companyId, recordedAt: { gte: previousFrom, lte: now }, ...timeEntryUserConstraint },
           orderBy: [{ recordedAt: 'asc' }, { id: 'asc' }],
           select: { id: true, userId: true, type: true, recordedAt: true },
         }),
         this.prisma.user.count({
-          where: { companyId: user.companyId, active: true, createdAt: { gte: from, lte: now } },
+          where: { companyId: user.companyId, active: true, createdAt: { gte: from, lte: now }, ...departmentConstraint },
         }),
         this.prisma.user.count({
-          where: { companyId: user.companyId, active: true, createdAt: { gte: previousFrom, lt: from } },
+          where: { companyId: user.companyId, active: true, createdAt: { gte: previousFrom, lt: from }, ...departmentConstraint },
         }),
         this.prisma.department.findMany({
-          where: { companyId: user.companyId },
+          where: { companyId: user.companyId, ...selectedDepartmentConstraint },
           orderBy: { name: 'asc' },
           select: { id: true, name: true },
         }),

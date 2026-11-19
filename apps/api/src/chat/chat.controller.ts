@@ -2,11 +2,16 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators';
 import { ChatService } from './chat.service';
-import { CreateConversationDto, ListMessagesQueryDto, SendMessageDto } from './dto/chat.dto';
+import { CreateConversationDto, ListMessagesQueryDto, SearchMessagesQueryDto, SendMessageDto } from './dto/chat.dto';
 
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chat: ChatService) {}
+
+  @Get('search')
+  search(@CurrentUser() user: AuthUser, @Query() query: SearchMessagesQueryDto) {
+    return this.chat.searchMessages(user, query);
+  }
 
   @Get('conversations')
   conversations(@CurrentUser() user: AuthUser) {
