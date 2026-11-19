@@ -1,35 +1,33 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { EmptyState, PageHeading, StatusIndicator } from '@/components/design-system';
 
-const MODULES: Record<string, { title: string; sprint: string; description: string }> = {
-  chat: { title: 'Vizion Chat', sprint: 'Sprint 03', description: 'Mensagens individuais, grupos, canais de projeto e arquivos.' },
-  voice: { title: 'Vizion Voice', sprint: 'Sprint 04', description: 'Canais de voz permanentes, push-to-talk e salas privadas (LiveKit).' },
-  meetings: { title: 'Vizion Meetings', sprint: 'Sprint 05', description: 'Videochamadas, compartilhamento de tela e agendamento.' },
-  monitor: { title: 'Vizion Monitor', sprint: 'Sprint 06', description: 'Presença em tempo real e indicadores operacionais.' },
-  projects: { title: 'Vizion Projects', sprint: 'Sprint 07', description: 'Projetos, tarefas e integração com GitHub/GitLab.' },
-  intelligence: { title: 'Vizion Intelligence', sprint: 'Sprint 08', description: 'Relatórios inteligentes, resumos e análise de gargalos.' },
+const MODULES: Record<string, { title: string; category: string; description: string; available: boolean; dependencies: string[] }> = {
+  inbox: { title: 'Inbox', category: 'Workspace', description: 'Central de notificações e itens que precisam da sua atenção.', available: false, dependencies: ['Notificações persistentes', 'Preferências de alerta'] },
+  workspace: { title: 'Meu workspace', category: 'Workspace', description: 'Visão da organização, equipes e recursos compartilhados.', available: false, dependencies: ['Diretório da organização', 'Permissões por área'] },
+  projects: { title: 'Projects', category: 'Organização', description: 'Projetos e tarefas com status, responsáveis e histórico.', available: false, dependencies: ['Modelo persistente de projetos e tarefas', 'Permissões e atividade'] },
+  voice: { title: 'Voice', category: 'Comunicação', description: 'Salas de voz organizadas por equipe e departamento.', available: false, dependencies: ['Infraestrutura de mídia', 'Presença e autorização de sala'] },
+  meetings: { title: 'Meetings', category: 'Comunicação', description: 'Agenda de reuniões, participantes e sessões.', available: false, dependencies: ['Calendário e fuso horário', 'Integração de áudio e vídeo'] },
+  monitor: { title: 'Monitor', category: 'Operações', description: 'Indicadores operacionais com origem e contexto explícitos.', available: false, dependencies: ['Política de privacidade', 'Eventos operacionais autorizados'] },
+  intelligence: { title: 'Intelligence', category: 'Operações', description: 'Análises baseadas em dados autorizados do workspace.', available: false, dependencies: ['Integração de IA', 'Fontes e retenção auditáveis'] },
+  documents: { title: 'Documents', category: 'Workspace', description: 'Documentos e arquivos compartilhados da organização.', available: false, dependencies: ['Armazenamento de arquivos', 'Permissões e metadados'] },
+  reports: { title: 'Reports', category: 'Operações', description: 'Relatórios operacionais com filtros e exportação.', available: false, dependencies: ['Catálogo de relatórios', 'Exportação e filtros'] },
+  automations: { title: 'Automations', category: 'Operações', description: 'Automações e histórico de execução do workspace.', available: false, dependencies: ['Motor de execução', 'Logs e gestão de permissões'] },
+  settings: { title: 'Configurações', category: 'Workspace', description: 'Preferências pessoais, integrações e configurações da organização.', available: false, dependencies: ['Preferências de usuário', 'Administração de integrações'] },
 };
 
 export default async function ModulePage({ params }: { params: Promise<{ module: string }> }) {
   const { module } = await params;
-  const mod = MODULES[module];
-  if (!mod) notFound();
+  const details = MODULES[module];
+  if (!details) notFound();
 
-  return (
-    <div className="mx-auto max-w-2xl">
-      <section className="card relative overflow-hidden p-8 text-center sm:p-12">
-        <div className="absolute left-1/2 top-0 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/10 blur-[80px]" />
-        <div className="relative">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-xl font-semibold text-primary">R</span>
-          <p className="eyebrow mt-6">{mod.sprint}</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{mod.title}</h1>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{mod.description}</p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link href="/dashboard" className="btn">Ir ao dashboard</Link>
-            <Link href="/time" className="btn-ghost">Abrir Vizion Time</Link>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
+  return <div className="space-y-4">
+    <PageHeading eyebrow={details.category} title={details.title} description={details.description} actions={<StatusIndicator label="Planejado" tone="info" />} />
+    <section className="overflow-hidden rounded-lg border border-line/70 bg-surface">
+      <div className="flex items-center justify-between gap-4 border-b border-line/60 px-3 py-2.5"><div><p className="text-xs font-medium">Estado do módulo</p><p className="mt-1 text-[10px] text-muted">Esta rota explica o escopo sem simular recursos ou dados inexistentes.</p></div><StatusIndicator label="Ainda não implementado" /></div>
+      <EmptyState title={`${details.title} ainda não está disponível`} description="A experiência e os dados deste módulo serão habilitados após sua implementação funcional. As operações disponíveis no produto continuam acessíveis na navegação." />
+      <div className="border-t border-line/60 px-3 py-3"><p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted">Dependências identificadas</p><ul className="divide-y divide-line/50">{details.dependencies.map((dependency) => <li key={dependency} className="flex items-center gap-2 py-2 text-[11px] text-muted"><span className="h-1.5 w-1.5 rounded-full bg-muted/60" />{dependency}</li>)}</ul></div>
+    </section>
+    <section className="rounded-lg border border-line/70 bg-surface px-3 py-3"><p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-muted">Módulos disponíveis</p><div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px]"><Link className="text-fg hover:text-primary" href="/dashboard">Dashboard</Link><Link className="text-fg hover:text-primary" href="/workforce">Workforce</Link><Link className="text-fg hover:text-primary" href="/time">Time</Link><Link className="text-fg hover:text-primary" href="/chat">Chat</Link><Link className="text-fg hover:text-primary" href="/audit">Auditoria</Link></div></section>
+  </div>;
 }

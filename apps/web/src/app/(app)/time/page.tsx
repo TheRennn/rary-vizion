@@ -74,23 +74,22 @@ export default function TimePage() {
   const worked = (data?.workedSeconds ?? 0) + elapsed;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-none space-y-4">
       <header className="flex items-end justify-between">
         <div>
           <p className="eyebrow mb-2">Controle de jornada</p>
-          <h1 className="text-3xl font-semibold tracking-tight uppercase text-[#c3c3c3]">Minha jornada</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Minha jornada</h1>
         </div>
         <p className="hidden text-xs text-muted sm:block">Horário validado pelo servidor</p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
-        <section className="card relative overflow-hidden p-6 sm:p-8">
-          <div className="absolute -right-20 -top-20 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col justify-between gap-8">
+      <div className="grid gap-3 lg:grid-cols-[1.35fr_.65fr]">
+        <section className="card relative overflow-hidden p-5">
+          <div className="relative flex flex-col justify-between gap-6">
             <div className="flex items-start justify-between">
               <div>
                 <p className="eyebrow">Tempo trabalhado hoje</p>
-                <p className="mt-4 font-mono text-5xl font-medium tracking-tight tabular-nums sm:text-6xl" aria-live="off">
+                <p className="mt-3 font-mono text-5xl font-medium tracking-tight tabular-nums sm:text-5xl" aria-live="off">
                   {formatDuration(worked)}
                 </p>
               </div>

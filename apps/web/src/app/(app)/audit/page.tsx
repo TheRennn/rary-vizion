@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import { hasMinRole } from '@/lib/roles';
 import type { AuditLog } from '@/lib/types';
+import { DataTable, EmptyState, PageHeading } from '@/components/design-system';
 
 const ACTION_LABEL: Record<string, string> = {
   'time.recorded': 'Registrou ponto',
@@ -41,11 +42,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="eyebrow mb-2">Governança</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Auditoria</h1>
-        <p className="mt-1 text-sm text-muted">Atividades registradas no workspace.</p>
-      </header>
+      <PageHeading eyebrow="Governança" title="Auditoria" description="Atividades registradas no workspace." />
 
       {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300">{error}</p>}
 
@@ -60,19 +57,18 @@ export default function AuditPage() {
         {logs === null ? (
           <p className="p-5 text-sm text-muted">Carregando auditoria…</p>
         ) : logs.length === 0 ? (
-          <p className="p-5 text-sm text-muted">Nenhuma atividade registrada.</p>
+          <EmptyState title="Nenhuma atividade registrada" description="As ações do workspace aparecerão aqui quando forem registradas." />
         ) : (
-          <div className="divide-y divide-line/70">
-            {logs.map((log) => (
-              <div key={log.id} className="grid gap-2 px-5 py-4 sm:grid-cols-[10rem_1fr_auto] sm:items-center">
-                <span className="text-sm font-medium">{ACTION_LABEL[log.action] ?? log.action}</span>
-                <span className="text-xs text-muted">{log.entity}{log.entityId ? ` · ${log.entityId.slice(0, 8)}` : ''}</span>
-                <time className="text-xs text-muted" dateTime={log.createdAt}>
-                  {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(log.createdAt))}
-                </time>
-              </div>
-            ))}
-          </div>
+          <DataTable
+            rows={logs}
+            rowLabel={(log) => `${ACTION_LABEL[log.action] ?? log.action} ${log.entity}`}
+            columns={[
+              { key: 'action', label: 'Ação', render: (log) => <span className="font-medium">{ACTION_LABEL[log.action] ?? log.action}</span> },
+              { key: 'entity', label: 'Registro', render: (log) => <span className="text-muted">{log.entity}{log.entityId ? ` · ${log.entityId.slice(0, 8)}` : ''}</span> },
+              { key: 'actor', label: 'Ator', render: (log) => <span className="text-muted">{log.actorId ? log.actorId.slice(0, 8) : 'Sistema'}</span> },
+              { key: 'date', label: 'Data', render: (log) => <time className="whitespace-nowrap text-muted" dateTime={log.createdAt}>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(log.createdAt))}</time> },
+            ]}
+          />
         )}
       </section>
     </div>

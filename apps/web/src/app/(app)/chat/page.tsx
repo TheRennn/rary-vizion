@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } 
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import type { ChatConversation, ChatMessage, ChatMessagePage, Employee } from '@/lib/types';
+import { openContextPanel } from '@/components/context-panel';
 
 interface ChatSearchResult {
   id: string;
@@ -196,7 +197,7 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-8rem)] min-h-[20rem] overflow-hidden rounded-2xl border border-line/90 bg-surface/90 shadow-[0_18px_50px_rgba(0,0,0,.16)] md:h-[calc(100dvh-6rem)] md:min-h-[24rem]">
+    <div className="flex h-[calc(100dvh-7.5rem)] min-h-[20rem] overflow-hidden rounded-lg border border-line/90 bg-surface/90 shadow-none md:h-[calc(100dvh-5.5rem)] md:min-h-[24rem]">
       <aside className={`${selectedId ? 'hidden md:flex' : 'flex'} w-full flex-col border-r border-line/80 md:w-[300px] md:shrink-0`}>
         <div className="border-b border-line/80 p-4">
           <div className="mb-4 flex items-center justify-between">
@@ -317,6 +318,12 @@ export default function ChatPage() {
                 <h2 className="truncate text-sm font-semibold">{selected.peer?.name ?? 'Conversa'}</h2>
                 <p className="truncate text-xs text-muted">{selected.peer?.jobTitle ?? selected.peer?.email}</p>
               </div>
+              <button type="button" className="icon-button ml-auto" aria-label="Detalhes da conversa" title="Detalhes da conversa" onClick={() => openContextPanel({
+                title: selected.peer?.name ?? 'Conversa',
+                eyebrow: 'Chat direto',
+                description: selected.peer?.jobTitle ?? 'Informações de contato do colaborador.',
+                fields: [['E-mail', selected.peer?.email ?? ''], ['Cargo', selected.peer?.jobTitle ?? 'Não informado'], ['Mensagens carregadas', String(messages.length)], ['Não lidas', selected.unread ? 'Sim' : 'Não']],
+              })}>ⓘ</button>
             </header>
 
             <div ref={threadViewport} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">

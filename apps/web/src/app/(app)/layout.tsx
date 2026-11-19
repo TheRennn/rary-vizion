@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/components/auth-provider';
-import { Sidebar } from '@/components/sidebar';
+import { AppShell } from '@/components/app-shell';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, apiOffline } = useAuth();
@@ -35,11 +35,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen">
-      <Sidebar />
-      <main className="app-main">
-        <div className="app-content">{children}</div>
-      </main>
-    </div>
+      <AppShell>{children}</AppShell>
   );
 }

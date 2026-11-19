@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import { hasMinRole } from '@/lib/roles';
 import type { AuthUser, DashboardOverview, DashboardPeriod, Department } from '@/lib/types';
+import { ActivityFeed, ActivityItem, EmptyState } from '@/components/design-system';
 
 const REFRESH_MS = 15_000;
 const PERIOD_LABELS: Record<DashboardPeriod, string> = {
@@ -286,7 +287,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
   const attendance = overview?.attendance;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="eyebrow mb-2">Vizion / Overview</p>
@@ -355,7 +356,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
         </div>
       ) : overview ? (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores executivos">
+          <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores executivos">
             <MetricCard
               href="/workforce"
               label="Colaboradores ativos"
@@ -435,27 +436,24 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
                 <span className="text-xs text-muted">{departmentId ? 'Atividade da empresa' : 'Eventos registrados'}</span>
               </div>
               {overview.activity.length === 0 ? (
-                <p className="text-sm text-muted">Nenhuma atividade registrada até o momento.</p>
+                <EmptyState title="Sem atividade recente" description="Ações do workspace aparecerão aqui conforme forem registradas." />
               ) : (
-                <ol className="space-y-4">
+                <ActivityFeed>
                   {overview.activity.map((activity) => (
-                    <li key={activity.id} className="flex gap-3">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm">{activity.description}</p>
-                        <p className="mt-1 text-xs text-muted">
-                          {activity.actorName ? `${activity.actorName} · ` : ''}
-                          {new Intl.DateTimeFormat('pt-BR', {
-                            day: '2-digit',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }).format(new Date(activity.createdAt))}
-                        </p>
-                      </div>
-                    </li>
+                    <ActivityItem key={activity.id}>
+                      <p className="text-xs text-fg">{activity.description}</p>
+                      <p className="mt-1 text-[10px] text-muted">
+                        {activity.actorName ? `${activity.actorName} · ` : ''}
+                        {new Intl.DateTimeFormat('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        }).format(new Date(activity.createdAt))}
+                      </p>
+                    </ActivityItem>
                   ))}
-                </ol>
+                </ActivityFeed>
               )}
             </article>
           </section>

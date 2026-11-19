@@ -21,7 +21,7 @@ O visual global usa tokens centralizados em `apps/web/src/app/globals.css` e Tai
 
 ## Arquitetura
 
-- **Frontend:** Next.js 14 App Router, React, TypeScript e Tailwind em `apps/web`.
+- **Frontend:** Next.js 15 App Router, React, TypeScript e Tailwind em `apps/web`.
 - **Backend:** NestJS, TypeScript e API REST em `apps/api`; prefixo `/api`, porta padrão 3333.
 - **Persistência:** Prisma sobre SQLite no fluxo local; schema em `apps/api/prisma/schema.prisma`. Existem migrações e Auth Supabase opcionais, mas a camada de dados dos módulos continua Prisma/SQLite. A configuração Supabase não migra automaticamente os dados Prisma; alinhar a persistência antes de operar Supabase como fonte empresarial de produção.
 - **Autenticação:** se Supabase estiver configurado, contas reais usam Supabase Auth/perfil; sem Supabase, registro e login usam usuários Prisma com senha bcrypt e token local assinado; contas demo mantêm tokens próprios. Guardas revalidam usuário/papel ativo por requisição. O token no cliente usa `localStorage` (migrar para cookie httpOnly antes de produção).
@@ -45,7 +45,7 @@ Em desenvolvimento, o app entra por padrão como `owner@demo.com`. Para desativa
 
 ## Qualidade e segurança — estado conhecido
 
-- Há testes unitários para regras de jornada, métricas do dashboard, autenticação demo/local, validação de ambiente e envelope HTTP de erro. Nesta execução, o build não encontrou `nest` e a suíte não encontrou `ts-node/register`; a instalação de dependências não terminou.
+- Há testes unitários para regras de jornada, métricas do dashboard, autenticação demo/local, validação de ambiente e envelope HTTP de erro. Na validação do Sprint 04, `typecheck` e build de produção do frontend passaram; os 19 testes e o build da API também passaram em uma cópia temporária isolada, usada porque a instalação workspace no caminho sincronizado por OneDrive não conseguiu criar links locais.
 - Todas as rotas são submetidas a guardas globais; auditar cada endpoint novo para autorização, isolamento por empresa e validação de DTO.
 - Erros HTTP da API agora usam envelope comum com `statusCode`, `message`, `requestId`, `path` e `timestamp`; `X-Request-Id` correlaciona a resposta com logs sem registrar query string.
 - Falha ou ausência de credenciais retorna 401 para que o cliente limpe sessões expiradas; 403 fica reservado a usuário autenticado sem permissão.
@@ -73,6 +73,57 @@ Os próximos cinco sprints detalhados (12–16), incluindo escopo de backend, p�
 ### Próximo passo recomendado
 
 **Sprint 12 — Workforce e Time**, condicionado ao fechamento das pendências de segurança/persistência do Sprint 02: concluir operações de colaboradores, solicitações de jornada e aprovações auditáveis.
+
+### Execução do Sprint 04 — Complete UI Overhaul
+
+- **Estado:** Parcialmente concluído. A linguagem visual e o shell global foram migrados para uma interface escura compacta, com sidebar, header contextual, favoritos, navegação móvel, Command Menu e drawer contextual reutilizável. As funcionalidades de negócio preexistentes foram preservadas.
+- **Design system criado/refatorado:** `AppShell`, `ContextPanel`, `PageHeading`, `EmptyState`, `StatusIndicator`, `PriorityIndicator`, `CompactList`, `ActivityFeed`, `ActivityItem`, `FilterBar`, `DataTable`, `Avatar`, `Skeleton`, `ErrorState` e `ContextMenu`. Tokens globais agora refletem a paleta especificada, com bordas, superfícies e controles mais discretos. O componente de navegação anterior foi removido após sua substituição pelo shell global.
+- **Páginas migradas:** Dashboard e feed de atividades; Workforce com tabela/lista e drawer real de perfil; Time com densidade compacta; Chat com painel contextual do participante; Auditoria com tabela reutilizável. Rotas sem backend (Inbox, Workspace, Projects, Voice, Meetings, Monitor, Intelligence, Documents, Reports, Automations e Settings) apresentam estado planejado e dependências sem simular dados ou ações.
+- **Interações:** Ctrl/Cmd+K abre busca global navegável por setas/Enter, inclui diretório de colaboradores conforme a pesquisa digitada e oferece atalhos para as áreas operacionais existentes; favoritos ficam salvos no navegador; sidebar recolhe no desktop; navegação móvel ocupa uma gaveta; painéis contextuais fecham por Escape, botão ou clique externo.
+- **Validação:** frontend `typecheck` e build de produção passaram após a migração. Cobertura visual exploratória das rotas funcionais permanece pendente; integrações de contexto para Projects/Tasks/Documents aguardam a implementação desses módulos.
+- **Pendências:** filtros e ordenação de tabela, paginação, seleção múltipla, widgets configuráveis, suporte a preferências de layout persistidas no servidor, testes automatizados de interação/responsividade, e os módulos ainda sem API/schema.
+
+## Próximos cinco Sprints detalhados
+
+### Sprint 17 — Workforce e Time: aprovações e histórico
+
+- **Objetivo/diagnóstico:** concluir os fluxos de pessoas e jornada; hoje edição e ponto existem, mas faltam histórico profissional, justificativas e aprovação.
+- **Funcionalidades:** solicitações de ajuste com motivo, fila de aprovação, decisões e trilha imutável; histórico de cargo/departamento; paginação e filtros no servidor.
+- **Backend/integrações:** schema Prisma para solicitações, eventos e snapshots; transições autorizadas por hierarquia; transação de auditoria; sem integração externa obrigatória.
+- **Frontend/páginas/componentes:** `/workforce`, `/time`, `/approvals`; DataTable, FilterBar, StatusIndicator, ContextPanel e ActivityFeed.
+- **Testes/aceitação:** cálculo de jornada e transições de aprovação cobertos; tenant e hierarquia testados; [ ] pedidos persistem; [ ] decisões auditadas; [ ] tabela responde a filtros/paginação; [ ] desktop/mobile revisados.
+
+### Sprint 18 — Chat: canais e colaboração
+
+- **Objetivo/diagnóstico:** expandir conversas diretas, atualmente com polling e busca participante-scoped, para canais e trabalho em grupo.
+- **Funcionalidades:** canais públicos/privados, membros, respostas, reações, mensagens fixadas, estado de leitura e notificações; anexos só após definir armazenamento e política de retenção.
+- **Backend/integrações:** modelos de canal/membro/thread/reação; autorização por associação; escolher WebSocket/SSE e storage seguro após avaliar operação e custo.
+- **Frontend/páginas/componentes:** `/chat`; listas compactas, activity feed de mensagens, painéis de canal/participante, menus contextuais e estados offline.
+- **Testes/aceitação:** concorrência, reconexão, acesso cruzado e upload verificados; [ ] membros não leem canais sem permissão; [ ] leitura/reação persiste; [ ] falha de rede tem recuperação acessível.
+
+### Sprint 19 — Projects: projetos, tarefas e dependências
+
+- **Objetivo/diagnóstico:** Projects ainda é uma rota explicativa sem entidades persistidas.
+- **Funcionalidades:** projetos, issues identificadas, status, prioridade, responsável, datas, comentários, dependências e vistas list/board/timeline.
+- **Backend/integrações:** schema multiempresa; CRUD transacional e histórico; integração GitHub/GitLab fica opcional e somente após contratos de OAuth e escopos mínimos.
+- **Frontend/páginas/componentes:** `/projects`, `/projects/[id]`, `/issues/[id]`; DataTable, Status/PriorityIndicator, ContextPanel, Command Menu e ActivityFeed.
+- **Testes/aceitação:** regras de estado, tenant, hierarquia e dependências testadas; [ ] CRUD persiste; [ ] identificadores são únicos por empresa; [ ] listas e painel mantêm filtros ao navegar.
+
+### Sprint 20 — Documents e Knowledge Base
+
+- **Objetivo/diagnóstico:** Documents não possui API, armazenamento nem preview hoje.
+- **Funcionalidades:** pastas, metadados, busca, versões, preview seguro, compartilhamento interno e vínculo com projetos/conversas.
+- **Backend/integrações:** selecionar storage compatível com acesso privado, URLs assinadas, antivírus, limites de tipo/tamanho, quotas e retenção; auditar download/compartilhamento.
+- **Frontend/páginas/componentes:** `/documents`, `/documents/[id]`; CompactList, DataTable, SearchInput, FilterBar, ContextPanel, Empty/ErrorState.
+- **Testes/aceitação:** autorização, MIME, tamanho, URLs expiradas e isolamento cross-tenant testados; [ ] nenhum objeto é público por padrão; [ ] preview/download respeita permissões; [ ] teclado e mobile revisados.
+
+### Sprint 21 — Inbox, Reports e observabilidade de produto
+
+- **Objetivo/diagnóstico:** Inbox/Reports e preferências ainda são estados planejados; Dashboard já agrega workforce e jornada, mas não configura widgets/exportações.
+- **Funcionalidades:** notificações persistentes com preferências, relatórios filtráveis/exportáveis, automações com logs somente após escopo, limites e permissões definidos.
+- **Backend/integrações:** eventos/outbox, deduplicação, APIs de relatório com agregação e auditoria; exportação assíncrona; escolher canais de notificação com consentimento e opt-out.
+- **Frontend/páginas/componentes:** `/inbox`, `/reports`, `/settings`; NotificationPanel, DataTable, FilterBar, Command Menu, ContextPanel e Skeleton.
+- **Testes/aceitação:** entrega duplicada, permissões, exportações e filtros testados; [ ] notificações podem ser lidas/descartadas; [ ] relatório reproduz os filtros; [ ] preferências persistem; [ ] desempenho e acessibilidade medidos.
 
 ## Endpoints principais
 

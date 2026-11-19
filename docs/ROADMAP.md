@@ -2,6 +2,8 @@
 
 Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” significa que o trabalho ainda não está implementado nem validado. Cada sprint deve atualizar seu estado e registrar decisões no PR ou histórico de entrega. Não marcar como concluído com telas apenas visuais.
 
+> O briefing recebido para o Sprint 04 atual é uma remodelação global da interface. Seu estado, componentes e validação estão documentados no README. Os itens numerados como Sprint 04–16 abaixo vieram do roadmap funcional anterior e permanecem como backlog de domínio; eles não representam o Sprint 04 visual.
+
 ## Sprint 02 — Backend e Arquitetura
 
 - **Objetivo:** estabilizar contratos, persistência e limites de segurança antes da expansão funcional.

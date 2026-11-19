@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import { ROLE_LABEL, ROLE_RANK, hasMinRole } from '@/lib/roles';
 import type { Department, Employee, Role } from '@/lib/types';
+import { openContextPanel } from '@/components/context-panel';
 
 export default function WorkforcePage() {
   const { user } = useAuth();
@@ -79,6 +80,26 @@ export default function WorkforcePage() {
     }
   }
 
+  function showEmployee(employee: Employee) {
+    openContextPanel({
+      title: employee.name,
+      eyebrow: 'Perfil de colaborador',
+      description: employee.email,
+      fields: [
+        ['Status', employee.active ? 'Ativo' : 'Arquivado'],
+        ['Cargo', employee.jobTitle ?? 'Não informado'],
+        ['Departamento', employee.department?.name ?? 'Sem departamento'],
+        ['Papel', ROLE_LABEL[employee.role]],
+      ],
+      actions: canManage && ROLE_RANK[employee.role] < ROLE_RANK[user!.role]
+        ? [
+            { label: 'Editar perfil', onClick: () => setEditing(employee) },
+            { label: employee.active ? 'Arquivar conta' : 'Reativar conta', onClick: () => void setEmployeeActive(employee) },
+          ]
+        : [],
+    });
+  }
+
   function onUpdateUser(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!editing) return;
@@ -119,7 +140,7 @@ export default function WorkforcePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <header className="flex items-end justify-between">
         <div>
           <p className="eyebrow mb-2">Gestão de pessoas</p>
@@ -151,7 +172,7 @@ export default function WorkforcePage() {
           </select>
           <div className="flex gap-2" role="group" aria-label="Modo de visualização">
             <button type="button" aria-pressed={view === 'table'} onClick={() => setView('table')} className={view === 'table' ? 'btn h-11 px-3' : 'btn-ghost h-11 px-3'}>Tabela</button>
-            <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')} className={view === 'cards' ? 'btn h-11 px-3' : 'btn-ghost h-11 px-3'}>Cards</button>
+                  <button type="button" aria-pressed={view === 'cards'} onClick={() => setView('cards')} className={view === 'cards' ? 'btn h-11 px-3' : 'btn-ghost h-11 px-3'}>Lista</button>
           </div>
         </div>
         {departments.length > 0 && <div className="flex flex-wrap gap-2" aria-label="Resumo por departamento">
@@ -169,10 +190,10 @@ export default function WorkforcePage() {
             <span className="text-xs text-muted">{filteredEmployees.length} resultado{filteredEmployees.length === 1 ? '' : 's'}</span>
           </div>
           {employees === null ? <p className="p-5 text-sm text-muted">Carregando colaboradores…</p> : filteredEmployees.length === 0 ? <div className="p-8 text-center"><p className="font-medium">Nenhum colaborador encontrado</p><p className="mt-1 text-sm text-muted">Ajuste os filtros ou limpe a busca.</p><button type="button" className="btn-ghost mt-4" onClick={() => { setSearch(''); setDepartmentFilter('all'); setRoleFilter('all'); setStatusFilter('all'); }}>Limpar filtros</button></div> : view === 'cards' ? (
-            <div className="grid gap-3 p-4 sm:grid-cols-2 2xl:grid-cols-3">{filteredEmployees.map((employee) => <article key={employee.id} className="rounded-xl border border-line/80 bg-surface2/35 p-4">
+            <div className="grid gap-2 p-3 sm:grid-cols-2 2xl:grid-cols-3">{filteredEmployees.map((employee) => <article key={employee.id} className="rounded-lg border border-line/80 bg-surface2/25 p-3">
               <div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{employee.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}</div><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-semibold">{employee.name}</h3><p className="truncate text-xs text-muted">{employee.email}</p></div><span className={`rounded-full px-2 py-1 text-[10px] ${employee.active ? 'bg-emerald-400/10 text-emerald-300' : 'bg-surface text-muted'}`}>{employee.active ? 'Ativo' : 'Arquivado'}</span></div>
               <div className="mt-4 space-y-2 border-t border-line/70 pt-3 text-xs"><p><span className="text-muted">Cargo</span><span className="float-right">{employee.jobTitle ?? '—'}</span></p><p><span className="text-muted">Departamento</span><span className="float-right">{employee.department?.name ?? '—'}</span></p><p><span className="text-muted">Papel</span><span className="float-right">{ROLE_LABEL[employee.role]}</span></p></div>
-              {canManage && ROLE_RANK[employee.role] < ROLE_RANK[user.role] && <div className="mt-4 flex gap-2 border-t border-line/70 pt-3"><button type="button" className="btn-ghost flex-1 py-2" onClick={() => setEditing(employee)}>Editar</button><button type="button" className="btn-ghost flex-1 py-2" disabled={submitting} onClick={() => void setEmployeeActive(employee)}>{employee.active ? 'Arquivar' : 'Reativar'}</button></div>}
+              <div className="mt-3 flex gap-2 border-t border-line/70 pt-2"><button type="button" className="btn-ghost flex-1" onClick={() => showEmployee(employee)}>Detalhes</button>{canManage && ROLE_RANK[employee.role] < ROLE_RANK[user.role] && <button type="button" className="btn-ghost flex-1" onClick={() => setEditing(employee)}>Editar</button>}</div>
             </article>)}</div>
           ) : <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="border-b border-line/70 text-[11px] uppercase tracking-wider text-muted">
@@ -196,7 +217,7 @@ export default function WorkforcePage() {
                           {e.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                         </div>
                         <div>
-                          <p className="font-medium">{e.name}</p>
+                          <button type="button" className="text-left font-medium hover:text-primary" onClick={() => showEmployee(e)}>{e.name}</button>
                           <p className="text-xs text-muted">{e.email}</p>
                         </div>
                       </div>
