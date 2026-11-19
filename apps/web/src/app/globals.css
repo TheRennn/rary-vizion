@@ -8,8 +8,8 @@
   body {
     @apply bg-bg text-fg antialiased;
     background-image:
-      radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.08), transparent 23rem),
-      radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.05), transparent 28rem);
+      radial-gradient(circle at 12% 0%, rgba(27, 27, 27, 0.08), transparent 23rem),
+      radial-gradient(circle at 100% 100%, rgba(15, 15, 16, 0.05), transparent 28rem);
   }
   :focus-visible { @apply outline-2 outline-offset-2 outline-primary; }
   ::selection { @apply bg-primary/30 text-white; }

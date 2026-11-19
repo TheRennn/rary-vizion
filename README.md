@@ -4,7 +4,7 @@ Monorepo (npm workspaces) com **Sprint 01 (Foundation)** e a base do **Sprint 02
 
 ```
 apps/
-  api/   NestJS + Prisma + SQLite (auth JWT, multiempresa, RBAC, auditoria, ponto)
+  api/   NestJS + Supabase Auth/Postgres (multiempresa, RBAC, auditoria, ponto)
   web/   Next.js 14 (App Router) + Tailwind (login, dashboard, ponto, workforce)
 ```
 

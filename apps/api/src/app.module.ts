@@ -12,10 +12,13 @@ import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TimeModule } from './time/time.module';
 import { UsersModule } from './users/users.module';
+import { SupabaseModule } from './supabase/supabase.module';
+import { SupabaseAuthGuard } from './common/guards';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    SupabaseModule,
     PrismaModule,
     AuditModule,
     AuthModule,
@@ -28,7 +31,7 @@ import { UsersModule } from './users/users.module';
   ],
   providers: [
     // Ordem importa: autentica primeiro, depois valida papel.
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: SupabaseAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })

@@ -5,6 +5,48 @@ import { Role } from './domain-types';
 import { AuthUser } from './auth-user';
 import { IS_PUBLIC_KEY, MIN_ROLE_KEY } from './decorators';
 import { hasMinRole } from './roles';
+import { SupabaseService } from '../supabase/supabase.service';
+import { Request } from 'express';
+
+@Injectable()
+export class SupabaseAuthGuard implements CanActivate {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly supabase: SupabaseService,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
+    const request = context.switchToHttp().getRequest<Request & { user?: AuthUser }>();
+    const authorization = request.headers.authorization;
+    const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null;
+    if (!token) throw new ForbiddenException('Token de acesso obrigatório');
+
+    const { data, error } = await this.supabase.publicClient.auth.getUser(token);
+    if (error || !data.user) throw new ForbiddenException('Sessão inválida ou expirada');
+
+    const { data: profile, error: profileError } = await this.supabase.adminClient
+      .from('users')
+      .select('id,name,email,role,job_title,active,company_id')
+      .eq('id', data.user.id)
+      .single();
+    if (profileError || !profile || !profile.active) throw new ForbiddenException('Usuário inválido ou inativo');
+
+    request.user = {
+      id: profile.id,
+      companyId: profile.company_id,
+      role: profile.role as Role,
+      name: profile.name,
+      email: profile.email,
+    };
+    return true;
+  }
+}
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {

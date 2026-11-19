@@ -64,7 +64,7 @@ function WorkforceDonut({ overview }: { overview: DashboardOverview }) {
   const { activeEmployees, working, onBreak, offDuty } = overview.workforce;
   const segments = [
     { label: 'Em jornada', value: working, color: '#8b5cf6' },
-    { label: 'Em intervalo', value: onBreak, color: '#f59e0b' },
+    { label: 'Em intervalo', value: onBreak, color: '#f9b338' },
     { label: 'Fora da jornada', value: offDuty, color: '#3b82f6' },
   ];
   let offset = 0;

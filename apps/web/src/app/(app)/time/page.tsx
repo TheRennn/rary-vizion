@@ -78,7 +78,7 @@ export default function TimePage() {
       <header className="flex items-end justify-between">
         <div>
           <p className="eyebrow mb-2">Controle de jornada</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Minha jornada</h1>
+          <h1 className="text-3xl font-semibold tracking-tight uppercase text-[#c3c3c3]">Minha jornada</h1>
         </div>
         <p className="hidden text-xs text-muted sm:block">Horário validado pelo servidor</p>
       </header>

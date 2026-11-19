@@ -1,11 +1,5 @@
-// Prepara o ambiente local: .env, SQLite, schema e seed. Idempotente.
-import { execSync } from 'node:child_process';
+// Prepara os arquivos de ambiente para o Supabase. Idempotente.
 import { copyFileSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
-
-const run = (cmd) => {
-  console.log(`\n> ${cmd}`);
-  execSync(cmd, { stdio: 'inherit' });
-};
 
 function ensureEnv(target, example, requiredLine) {
   if (!existsSync(target)) copyFileSync(example, target);
@@ -16,9 +10,6 @@ function ensureEnv(target, example, requiredLine) {
 ensureEnv('apps/api/.env', 'apps/api/.env.example', 'DEV_AUTO_LOGIN="true"');
 ensureEnv('apps/web/.env.local', 'apps/web/.env.example', 'NEXT_PUBLIC_DEV_AUTO_LOGIN="true"');
 
-run('npx prisma generate --schema apps/api/prisma/schema.prisma');
-// db push: não interativo, ideal para desenvolvimento. Use "migrate" quando for versionar o schema.
-run('npm run db:push -w apps/api');
-run('npm run db:seed -w apps/api');
-
-console.log('\nPronto. Rode: npm run dev  (web em http://localhost:3000, API em http://localhost:3333/api/health)');
+console.log('\nConfigure as variáveis Supabase nos arquivos .env.');
+console.log('Execute supabase/migrations/20261119000000_initial.sql no SQL Editor do Supabase.');
+console.log('Depois rode: npm run dev');
