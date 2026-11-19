@@ -38,25 +38,27 @@ function MetricCard({
   value,
   detail,
   title,
+  icon,
 }: {
   href: string;
   label: string;
   value: string;
   detail: string;
   title: string;
+  icon: string;
 }) {
   return (
     <a
       href={href}
       title={title}
-      className="metric-card group block transition-colors hover:border-primary/50"
+      className="metric-card group block"
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm text-muted">{label}</p>
-        <span aria-hidden="true" className="text-sm text-muted transition-colors group-hover:text-primary">↗</span>
+        <p className="text-sm font-medium text-muted">{label}</p>
+        <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-[10px] border border-white/[0.06] bg-white/[0.035] text-base text-primary transition-all group-hover:border-primary/20 group-hover:bg-primary/10">{icon}</span>
       </div>
-      <p className="mt-4 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
-      <p className="mt-2 text-xs text-muted">{detail}</p>
+      <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+      <p className="text-xs text-muted">{detail}</p>
     </a>
   );
 }
@@ -287,14 +289,14 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
   const attendance = overview?.attendance;
 
   return (
-    <div className="space-y-4">
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <div className="space-y-5">
+      <header className="dashboard-heading flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="eyebrow mb-2">Vizion / Overview</p>
-          <h1 className="text-3xl font-semibold tracking-tight">
+          <p className="eyebrow dashboard-kicker mb-3">Visão geral</p>
+          <h1 className="font-semibold tracking-tight">
             {greeting()}, {user.name.split(' ')[0]}
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-2 text-sm text-muted">
             {user.company.name} ·{' '}
             {new Intl.DateTimeFormat('pt-BR', {
               weekday: 'long',
@@ -303,7 +305,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
             }).format(new Date())}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="dashboard-controls flex flex-wrap items-center gap-1">
           <label className="sr-only" htmlFor="dashboard-department">Departamento do painel</label>
           <select id="dashboard-department" value={departmentId} onChange={(event) => { setOverview(null); setDepartmentId(event.target.value); }} className="input w-auto min-w-40">
             <option value="">Toda a empresa</option>
@@ -333,11 +335,6 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
           >
             {refreshing ? 'Atualizando…' : 'Atualizar'}
           </button>
-          <span className="text-xs text-muted">
-            {overview
-              ? `Atualizado ${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(overview.generatedAt))}`
-              : 'Atualiza a cada 15s'}
-          </span>
         </div>
       </header>
 
@@ -356,13 +353,14 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
         </div>
       ) : overview ? (
         <>
-          <section className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores executivos">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores executivos">
             <MetricCard
               href="/workforce"
               label="Colaboradores ativos"
               value={String(active?.activeEmployees ?? 0)}
               detail={`${active?.newEmployees.current ?? 0} novos · ${formatChange(active?.newEmployees.changePercent ?? null)}`}
               title="Contagem de contas ativas da empresa; novos colaboradores comparados ao período anterior."
+              icon="◎"
             />
             <MetricCard
               href="/workforce"
@@ -370,6 +368,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               value={String(active?.working ?? 0)}
               detail={`${active?.onBreak ?? 0} em intervalo · ${active?.offDuty ?? 0} fora da jornada`}
               title="Status calculado pelo último registro de ponto, não pela conexão à plataforma."
+              icon="◷"
             />
             <MetricCard
               href="/time"
@@ -377,6 +376,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               value={formatHours(attendance?.workedSeconds ?? 0)}
               detail={formatChange(attendance?.changePercent ?? null)}
               title={`Total de tempo trabalhado no período ${overview.period}. Intervalos não são contabilizados.`}
+              icon="◫"
             />
             <MetricCard
               href="/time"
@@ -384,25 +384,26 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               value={formatHours(attendance?.averagePerActiveEmployeeSeconds ?? 0)}
               detail={PERIOD_LABELS[overview.period]}
               title="Horas registradas no período divididas pelo total atual de colaboradores ativos."
+              icon="⌁"
             />
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <section className="dashboard-primary-grid grid gap-4 xl:grid-cols-2">
             <article className="card p-5">
-              <div className="mb-5 flex items-start justify-between gap-3">
+              <div className="dashboard-section-title">
                 <div>
-                  <p className="eyebrow">Workforce live overview</p>
+                  <p className="eyebrow">Visão da equipe</p>
                   <h2 className="mt-1 text-lg font-semibold">Distribuição da jornada</h2>
                 </div>
-                <span className="text-xs text-muted">Atualiza a cada 15s</span>
+                <span className="dashboard-live">Ao vivo</span>
               </div>
               <WorkforceDonut overview={overview} />
             </article>
 
             <article className="card p-5">
-              <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div className="dashboard-section-title">
                 <div>
-                  <p className="eyebrow">Attendance analytics</p>
+                  <p className="eyebrow">Análise de presença</p>
                   <h2 className="mt-1 text-lg font-semibold">Horas ao longo do tempo</h2>
                 </div>
                 <p className="text-sm text-muted">
@@ -413,7 +414,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
             </article>
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-2">
+          <section className="dashboard-secondary-grid grid gap-4 xl:grid-cols-2">
             <article className="card p-5">
               <div className="mb-5 flex items-end justify-between gap-3">
                 <div>
@@ -505,21 +506,21 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
 
 function PersonalDashboard({ user }: { user: AuthUser }) {
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="eyebrow mb-2">Visão geral</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Olá, {user.name.split(' ')[0]}</h1>
-        <p className="mt-1 text-sm text-muted">{user.company.name}</p>
+    <div className="space-y-5">
+      <header className="dashboard-heading">
+        <p className="eyebrow dashboard-kicker mb-3">Visão geral</p>
+        <h1 className="font-semibold tracking-tight">Olá, {user.name.split(' ')[0]}</h1>
+        <p className="mt-2 text-sm text-muted">{user.company.name}</p>
       </header>
       <section className="card overflow-hidden">
-        <div className="relative p-7">
-          <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative min-h-[280px] p-8 sm:p-10">
+          <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
           <p className="eyebrow">Sua jornada</p>
-          <h2 className="mt-3 text-xl font-semibold">Comece o dia no Vizion Time</h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
+          <h2 className="mt-4 text-xl font-semibold">Comece o dia no Vizion Time</h2>
+          <p className="mt-3 max-w-xl text-sm leading-7 text-muted">
             Registre entrada, intervalos e saída em uma experiência simples e segura. O painel operacional é habilitado para gestores.
           </p>
-          <a href="/time" className="btn mt-5 inline-flex">Abrir ponto</a>
+          <a href="/time" className="btn mt-6 inline-flex items-center">Abrir ponto</a>
         </div>
       </section>
     </div>

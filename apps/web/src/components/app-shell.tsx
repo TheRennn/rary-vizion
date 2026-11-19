@@ -168,7 +168,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="sidebar-topline">
         <Link href="/dashboard" className="brand-link" aria-label="RARY Vizion — dashboard">
           <span className="brand-mark"><BrandIcon size={22} className="h-[22px] w-[22px] object-contain" /></span>
-          {!collapsed && <span className="min-w-0"><span className="block text-[13px] font-semibold text-fg">RARY Vizion</span><span className="block truncate text-[10px] text-muted">{user?.company.name}</span></span>}
+          {!collapsed && <span className="min-w-0"><span className="block text-[15px] font-semibold leading-tight text-fg">RARY Vizion</span><span className="mt-1 block truncate text-[11px] text-muted">{user?.company.name}</span></span>}
         </Link>
         {!collapsed && <button className="icon-button ml-auto" title="Ações rápidas" aria-label="Ações rápidas" onClick={() => setCommandOpen(true)}><Icon name="plus" /></button>}
       </div>
