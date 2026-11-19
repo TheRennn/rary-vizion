@@ -27,6 +27,7 @@ Se aparecer "API indisponível": abra http://localhost:3333/api/health e veja o 
 Seed: `owner@demo.com`, `manager@demo.com`, `dev@demo.com` — senha `Demo@12345`.
 
 Testes das regras de ponto: `npm test -w apps/api`.
+JWT expira em 8 horas por padrão; personalize com `JWT_EXPIRES_IN` (ex.: `15m`, `8h`, `7d`). Sessões expiradas são invalidadas no cliente quando a API responde `401`.
 
 ## Endpoints principais (prefixo `/api`)
 
@@ -36,11 +37,19 @@ Testes das regras de ponto: `npm test -w apps/api`.
 | GET | /auth/me | autenticado |
 | GET/POST | /users | listar: qualquer; criar: ADMIN |
 | GET/POST | /departments | listar: qualquer; criar: ADMIN |
+| GET | /dashboard/overview?period=30d | MANAGER |
 | POST | /time/clock | autenticado |
 | GET | /time/today, /time/history | autenticado |
 | GET | /time/team | MANAGER |
+| GET/POST | /chat/conversations | participante / autenticado |
+| GET | /chat/conversations/:id/messages | participante |
+| POST | /chat/conversations/:id/messages | participante |
+| PATCH | /chat/conversations/:id/read | participante |
 | GET | /audit | ADMIN |
 | GET | /health | público |
+
+O histórico do chat aceita `limit` (1–100, padrão 50) e `before` (UUID da mensagem mais antiga já carregada). A resposta inclui `items` em ordem cronológica e `hasMore`.
+O overview aceita `period=7d`, `30d` ou `90d`; agrega equipe, departamentos, jornada e auditoria sob o tenant do usuário. Projetos, tarefas, reuniões e insights de IA permanecem indisponíveis até existirem módulos e dados reais para alimentá-los.
 
 ## Convenções
 

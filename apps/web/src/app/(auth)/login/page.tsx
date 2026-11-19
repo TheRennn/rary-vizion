@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '@/components/auth-provider';
+import { BrandIcon } from '@/components/brand-icon';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -27,17 +28,29 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <form onSubmit={onSubmit} className="glass w-full max-w-sm space-y-4 rounded-xl p-6">
-        <div>
-          <h1 className="text-xl font-semibold">Entrar no Vizion</h1>
-          <p className="text-sm text-muted">Use o e-mail da sua empresa.</p>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden p-6">
+      <div className="absolute left-[-12rem] top-[-10rem] h-[30rem] w-[30rem] rounded-full bg-primary/10 blur-[100px]" />
+      <div className="absolute bottom-[-12rem] right-[-8rem] h-[26rem] w-[26rem] rounded-full bg-blue-500/10 blur-[100px]" />
+      <form onSubmit={onSubmit} className="glass relative w-full max-w-md space-y-5 rounded-3xl p-7 shadow-[0_30px_100px_rgba(0,0,0,.35)] sm:p-8">
+        <div className="mb-2 flex items-center gap-3">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl border border-primary/20 bg-surface2">
+            <BrandIcon size={36} className="h-9 w-9 object-contain" />
+          </div>
+          <div>
+            <p className="font-semibold">RARY Vizion</p>
+            <p className="text-xs text-muted">Workspace corporativo</p>
+          </div>
         </div>
-        <label className="block space-y-1 text-sm">
+        <div>
+          <p className="eyebrow mb-2">Acesso seguro</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Bem-vindo de volta</h1>
+          <p className="mt-1 text-sm text-muted">Use o e-mail da sua empresa.</p>
+        </div>
+        <label className="block space-y-2 text-sm font-medium">
           E-mail
           <input name="email" type="email" required autoComplete="email" className="input" />
         </label>
-        <label className="block space-y-1 text-sm">
+        <label className="block space-y-2 text-sm font-medium">
           Senha
           <input name="password" type="password" required autoComplete="current-password" className="input" />
         </label>

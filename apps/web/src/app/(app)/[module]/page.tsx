@@ -15,11 +15,20 @@ export default function ModulePage({ params }: { params: { module: string } }) {
   if (!mod) notFound();
 
   return (
-    <div className="mx-auto max-w-xl space-y-3 pt-16 text-center">
-      <h1 className="text-2xl font-semibold">{mod.title}</h1>
-      <p className="text-muted">{mod.description}</p>
-      <p className="text-sm text-muted">Planejado para o {mod.sprint}.</p>
-      <Link href="/dashboard" className="btn-ghost mt-4">Voltar ao dashboard</Link>
+    <div className="mx-auto max-w-2xl">
+      <section className="card relative overflow-hidden p-8 text-center sm:p-12">
+        <div className="absolute left-1/2 top-0 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/10 blur-[80px]" />
+        <div className="relative">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-xl font-semibold text-primary">R</span>
+          <p className="eyebrow mt-6">{mod.sprint}</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{mod.title}</h1>
+          <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{mod.description}</p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link href="/dashboard" className="btn">Ir ao dashboard</Link>
+            <Link href="/time" className="btn-ghost">Abrir Vizion Time</Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

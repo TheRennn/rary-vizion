@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333/api';
 const TOKEN_KEY = 'vizion.token';
+export const AUTH_EXPIRED_EVENT = 'vizion:auth-expired';
+const PUBLIC_AUTH_PATHS = new Set(['/auth/login', '/auth/register', '/auth/dev-login']);
 
 // Atenção: localStorage é simples para começar, mas exposto a XSS.
 // Para produção, migre para cookie httpOnly emitido pela API.
@@ -37,6 +39,16 @@ export async function api<T>(path: string, { method = 'GET', body }: ApiOptions 
   }
 
   if (!res.ok) {
+    if (
+      res.status === 401 &&
+      token &&
+      !PUBLIC_AUTH_PATHS.has(path) &&
+      typeof window !== 'undefined'
+    ) {
+      tokenStorage.clear();
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+
     let message = `Erro ${res.status}`;
     try {
       const data = (await res.json()) as { message?: string | string[] };

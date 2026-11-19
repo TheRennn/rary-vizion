@@ -5,9 +5,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: '#0D0D0D',
-        surface: '#151515',
-        surface2: '#1C1C1C',
+        bg: '#09090B',
+        surface: '#111114',
+        surface2: '#18181B',
         primary: '#8B5CF6',
         primary2: '#7C3AED',
         fg: '#F5F5F5',

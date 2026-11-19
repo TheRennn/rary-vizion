@@ -75,37 +75,54 @@ export default function WorkforcePage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Workforce</h1>
-        <p className="text-sm text-muted">Colaboradores e departamentos de {user.company.name}.</p>
+      <header className="flex items-end justify-between">
+        <div>
+          <p className="eyebrow mb-2">Gestão de pessoas</p>
+          <h1 className="text-3xl font-semibold tracking-tight">Workforce</h1>
+          <p className="mt-1 text-sm text-muted">{user.company.name}</p>
+        </div>
+        {canManage && <span className="hidden rounded-xl border border-line px-3 py-2 text-xs text-muted sm:block">{employees?.length ?? 0} pessoas</span>}
       </header>
 
-      {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
+      {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300">{error}</p>}
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
-        <section className="card overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-line text-muted">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+        <section className="card overflow-x-auto">
+          <div className="flex items-center justify-between border-b border-line/80 px-5 py-4">
+            <div>
+              <p className="eyebrow">Diretório</p>
+              <h2 className="mt-1 text-sm font-semibold">Colaboradores</h2>
+            </div>
+          </div>
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead className="border-b border-line/70 text-[11px] uppercase tracking-wider text-muted">
               <tr>
-                <th className="px-4 py-3 font-medium">Nome</th>
-                <th className="px-4 py-3 font-medium">Papel</th>
-                <th className="px-4 py-3 font-medium">Departamento</th>
-                <th className="px-4 py-3 font-medium">Cargo</th>
+                <th className="px-5 py-3 font-medium">Nome</th>
+                <th className="px-5 py-3 font-medium">Papel</th>
+                <th className="px-5 py-3 font-medium">Departamento</th>
+                <th className="px-5 py-3 font-medium">Cargo</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {employees === null ? (
-                <tr><td colSpan={4} className="px-4 py-4 text-muted">Carregando…</td></tr>
+                <tr><td colSpan={4} className="px-5 py-5 text-muted">Carregando colaboradores…</td></tr>
               ) : (
                 employees.map((e) => (
-                  <tr key={e.id}>
-                    <td className="px-4 py-3">
-                      <p>{e.name}</p>
-                      <p className="text-xs text-muted">{e.email}</p>
+                  <tr key={e.id} className="transition-colors hover:bg-white/[0.025]">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          {e.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                        </div>
+                        <div>
+                          <p className="font-medium">{e.name}</p>
+                          <p className="text-xs text-muted">{e.email}</p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-4 py-3">{ROLE_LABEL[e.role]}</td>
-                    <td className="px-4 py-3">{e.department?.name ?? '—'}</td>
-                    <td className="px-4 py-3">{e.jobTitle ?? '—'}</td>
+                    <td className="px-5 py-3.5"><span className="rounded-md border border-line bg-surface2/60 px-2 py-1 text-xs">{ROLE_LABEL[e.role]}</span></td>
+                    <td className="px-5 py-3.5 text-muted">{e.department?.name ?? '—'}</td>
+                    <td className="px-5 py-3.5 text-muted">{e.jobTitle ?? '—'}</td>
                   </tr>
                 ))
               )}
@@ -115,8 +132,11 @@ export default function WorkforcePage() {
 
         {canManage && (
           <div className="space-y-6">
-            <form onSubmit={onCreateUser} className="card space-y-3">
-              <h2 className="text-sm font-medium">Novo colaborador</h2>
+            <form onSubmit={onCreateUser} className="card space-y-3 p-5">
+              <div>
+                <p className="eyebrow">Cadastro</p>
+                <h2 className="mt-1 text-sm font-semibold">Novo colaborador</h2>
+              </div>
               <input name="name" placeholder="Nome" required minLength={2} className="input" />
               <input name="email" type="email" placeholder="E-mail" required className="input" />
               <input name="password" type="password" placeholder="Senha inicial (mín. 8)" required minLength={8} maxLength={72} className="input" />
@@ -135,8 +155,11 @@ export default function WorkforcePage() {
               <button className="btn w-full" disabled={submitting}>Adicionar colaborador</button>
             </form>
 
-            <form onSubmit={onCreateDepartment} className="card space-y-3">
-              <h2 className="text-sm font-medium">Novo departamento</h2>
+            <form onSubmit={onCreateDepartment} className="card space-y-3 p-5">
+              <div>
+                <p className="eyebrow">Organização</p>
+                <h2 className="mt-1 text-sm font-semibold">Novo departamento</h2>
+              </div>
               <input name="name" placeholder="Ex.: Backend" required minLength={2} maxLength={60} className="input" />
               <button className="btn-ghost w-full" disabled={submitting}>Criar departamento</button>
             </form>

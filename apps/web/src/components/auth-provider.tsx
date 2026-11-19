@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ApiError, api, tokenStorage } from '@/lib/api';
+import { ApiError, api, AUTH_EXPIRED_EVENT, tokenStorage } from '@/lib/api';
 import type { AuthUser } from '@/lib/types';
 
 interface RegisterInput {
@@ -30,6 +30,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [apiOffline, setApiOffline] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      setUser(null);
+      setApiOffline(null);
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpiredSession);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpiredSession);
+  }, []);
 
   const authenticate = useCallback(async (accessToken: string) => {
     tokenStorage.set(accessToken);

@@ -6,6 +6,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'RARY Vizion',
   description: 'The Workspace for Developers',
+  icons: {
+    icon: '/Eye-RARYVizion.svg',
+    shortcut: '/Eye-RARYVizion.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
