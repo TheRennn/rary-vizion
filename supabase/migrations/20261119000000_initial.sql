@@ -118,3 +118,9 @@ create policy "tenant_read_companies" on public.companies for select using (
 create policy "tenant_read_users" on public.users for select using (
   company_id = (select company_id from public.users where id = auth.uid())
 );
+
+grant usage on schema public to service_role;
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+alter default privileges in schema public grant all on tables to service_role;
+alter default privileges in schema public grant all on sequences to service_role;

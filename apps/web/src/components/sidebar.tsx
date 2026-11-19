@@ -68,9 +68,9 @@ export function Sidebar() {
   }, [open]);
 
   const sidebar = (
-    <aside className="glass flex h-screen h-[100dvh] w-[260px] shrink-0 flex-col overflow-hidden border-y-0 border-l-0 px-3 py-4">
-      <div className="mb-5 flex items-center gap-3 px-2 py-1">
-        <div className="grid h-9 w-9 place-items-center rounded-xl border border-primary/20 bg-surface2 shadow-[0_8px_30px_rgba(139,92,246,.18)]">
+    <aside className="sidebar-shell">
+      <div className="sidebar-brand">
+        <div className="sidebar-brand-mark">
           <BrandIcon size={28} className="h-7 w-7 object-contain" />
         </div>
         <div className="min-w-0">
@@ -80,7 +80,8 @@ export function Sidebar() {
         <button aria-label="Fechar menu" className="ml-auto rounded-lg p-2 text-muted md:hidden" onClick={() => setOpen(false)}>×</button>
       </div>
 
-      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain" aria-label="Principal">
+      <p className="sidebar-section-label">Workspace</p>
+      <nav className="sidebar-nav space-y-1" aria-label="Principal">
         {NAV.map((item) => {
           if (item.admin && !isAdmin) return null;
           const active = pathname === item.href;
@@ -90,20 +91,19 @@ export function Sidebar() {
               href={item.href}
               onClick={() => setOpen(false)}
               aria-current={active ? 'page' : undefined}
-              className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${active ? 'bg-primary/15 text-white shadow-[inset_0_0_0_1px_rgba(139,92,246,.12)]' : 'text-muted hover:bg-white/[0.04] hover:text-fg'
-                }`}
+              className={`sidebar-link ${active ? 'sidebar-link-active' : ''}`}
             >
-              <span className={active ? 'text-primary' : 'text-muted group-hover:text-fg'}><Icon name={item.icon} /></span>
+              <span className="sidebar-link-icon"><Icon name={item.icon} /></span>
               <span className="flex-1">{item.label}</span>
-              {item.soon && <span className="rounded-md border border-line px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted/70">soon</span>}
+              {item.soon && <span className="sidebar-soon">soon</span>}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-3 shrink-0 border-t border-line/80 px-2 pt-3">
+      <div className="sidebar-footer">
         <div className="mb-3 flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-surface2 text-xs font-semibold text-primary">
+          <div className="sidebar-avatar">
             {user?.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
           </div>
           <div className="min-w-0">
@@ -118,12 +118,12 @@ export function Sidebar() {
 
   return (
     <>
-      <header className="glass fixed inset-x-0 top-0 z-40 flex h-16 items-center border-x-0 border-t-0 px-4 md:hidden">
+      <header className="sidebar-mobile-header md:hidden">
         <button
           aria-label="Abrir menu"
           aria-expanded={open}
           onClick={() => setOpen(true)}
-          className="rounded-xl border border-line p-2.5 text-muted"
+          className="sidebar-mobile-trigger"
         >
           ☰
         </button>
@@ -137,10 +137,10 @@ export function Sidebar() {
         <div className="fixed inset-0 z-50 overflow-hidden md:hidden">
           <button
             aria-label="Fechar menu"
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="sidebar-mobile-overlay"
             onClick={() => setOpen(false)}
           />
-          <div className="relative h-dvh w-[260px] max-w-[calc(100vw_-_2rem)]">{sidebar}</div>
+          <div className="sidebar-mobile-panel">{sidebar}</div>
         </div>
       )}
     </>

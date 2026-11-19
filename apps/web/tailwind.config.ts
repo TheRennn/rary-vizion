@@ -5,16 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: '#09090B',
-        surface: '#111114',
-        surface2: '#18181B',
-        primary: '#8B5CF6',
-        primary2: '#7C3AED',
-        fg: '#F5F5F5',
-        muted: '#A1A1AA',
-        line: '#292929',
-        ok: '#34D399',
-        warn: '#FBBF24',
+        bg: 'rgb(var(--color-bg) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        surface2: 'rgb(var(--color-surface-2) / <alpha-value>)',
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        primary2: 'rgb(var(--color-primary-2) / <alpha-value>)',
+        fg: 'rgb(var(--color-fg) / <alpha-value>)',
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        line: 'rgb(var(--color-line) / <alpha-value>)',
+        ok: 'rgb(var(--color-ok) / <alpha-value>)',
+        warn: 'rgb(var(--color-warn) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

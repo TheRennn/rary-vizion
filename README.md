@@ -22,7 +22,10 @@ Em desenvolvimento o app entra sozinho como `owner@demo.com` por padrão. Para v
 normal, defina `DEV_AUTO_LOGIN="false"` na API e `NEXT_PUBLIC_DEV_AUTO_LOGIN="false"` no web.
 **Nunca ative em produção** (a API já bloqueia com NODE_ENV=production).
 
-Se aparecer "API indisponível": abra http://localhost:3333/api/health e veja o terminal do `npm run dev`.
+Se aparecer "API indisponível", inicie os dois serviços pela raiz do repositório com `npm run dev` e confira
+http://localhost:3333/api/health. Se a resposta indicar `permission denied`, execute
+`supabase/migrations/20261119000100_service_role_grants.sql` no SQL Editor do Supabase. Ela concede permissões
+somente ao `service_role`, usado pelo backend; não libera as tabelas para acesso público.
 
 Seed: `owner@demo.com`, `manager@demo.com`, `dev@demo.com` — senha `Demo@12345`.
 
@@ -57,6 +60,13 @@ O overview aceita `period=7d`, `30d` ou `90d`; agrega equipe, departamentos, jor
 - **RBAC:** `@MinRole(Role.X)` por rota; hierarquia em `apps/api/src/common/roles.ts`.
 - **Ponto:** máquina de estados em `time/time.rules.ts`; horário sempre do servidor; registros imutáveis.
 - **Novo módulo:** crie a pasta em `apps/api/src/<modulo>`, registre no `AppModule`.
+
+## Personalização do visual
+
+- **Cores do tema e aparência global:** `apps/web/src/app/globals.css`, nas variáveis `:root` (por exemplo `--color-bg`, `--color-surface` e `--color-primary`).
+- **Cores usadas pelas classes Tailwind:** `apps/web/tailwind.config.ts`, que conecta os nomes como `bg-bg` e `text-primary` às variáveis do CSS.
+- **Estrutura, navegação e itens da sidebar:** `apps/web/src/components/sidebar.tsx`; os estilos da sidebar ficam em `globals.css` nas classes `sidebar-*`.
+- **Largura da sidebar e espaçamento do conteúdo:** `--sidebar-width` e as classes `.app-main` / `.app-content` em `globals.css`; a estrutura da página fica em `apps/web/src/app/(app)/layout.tsx`.
 
 ## Pendências conhecidas
 

@@ -37,8 +37,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <Sidebar />
-      <main className="min-h-screen min-w-0 px-4 pb-10 pt-20 md:ml-[260px] md:px-6 md:pt-8 lg:px-8 xl:px-10">
-        <div className="mx-auto max-w-[1440px]">{children}</div>
+      <main className="app-main">
+        <div className="app-content">{children}</div>
       </main>
     </div>
   );
