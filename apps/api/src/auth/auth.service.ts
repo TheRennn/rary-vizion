@@ -5,6 +5,7 @@ import { randomBytes } from 'crypto';
 import { AuthUser } from '../common/auth-user';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { SupabaseService } from '../supabase/supabase.service';
+import { createDemoToken, demoUser, getDemoAccount, isDemoLogin } from './demo-auth';
 
 function slugify(name: string): string {
   const base = name
@@ -57,6 +58,10 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<{ accessToken: string }> {
+    if (isDemoLogin(dto.email, dto.password)) {
+      const secret = this.config.getOrThrow<string>('JWT_SECRET');
+      return { accessToken: createDemoToken(dto.email, secret) };
+    }
     const { data, error } = await this.supabase.publicClient.auth.signInWithPassword({
       email: dto.email,
       password: dto.password,
@@ -79,25 +84,14 @@ export class AuthService {
   async devLogin(): Promise<{ accessToken: string }> {
     const enabled = this.config.get<string>('DEV_AUTO_LOGIN') !== 'false';
     if (!enabled || this.config.get<string>('NODE_ENV') === 'production') throw new NotFoundException();
-
-    const login = await this.supabase.publicClient.auth.signInWithPassword({
-      email: 'owner@demo.com',
-      password: 'Demo@12345',
-    });
-    if (login.error) {
-      const signup = await this.supabase.publicClient.auth.signUp({
-        email: 'owner@demo.com',
-        password: 'Demo@12345',
-        options: { data: { name: 'Owner Demo', companyName: 'Demo Company' } },
-      });
-      if (signup.error || !signup.data.session) throw new UnauthorizedException('Usuário demo não disponível');
-      return { accessToken: signup.data.session.access_token };
-    }
-    if (login.error || !login.data.session) throw new UnauthorizedException('Usuário demo não disponível');
-    return { accessToken: login.data.session.access_token };
+    const secret = this.config.getOrThrow<string>('JWT_SECRET');
+    return { accessToken: createDemoToken('owner@demo.com', secret) };
   }
 
   async me(authUser: AuthUser) {
+    const demoAccount = getDemoAccount(authUser.email);
+    if (demoAccount) return demoUser(demoAccount);
+
     const { data, error } = await this.supabase.adminClient
       .from('users')
       .select('id,name,email,role,job_title,company:companies(id,name),department:departments(id,name)')

@@ -18,16 +18,29 @@ npm run setup     # cria .env, cria o banco SQLite e executa o seed
 npm run dev       # API :3333 e Web :3000
 ```
 
+Para testar, não execute migrations SQL. As contas demo são locais e independentes do Supabase.
+
 Em desenvolvimento o app entra sozinho como `owner@demo.com` por padrão. Para voltar ao login
 normal, defina `DEV_AUTO_LOGIN="false"` na API e `NEXT_PUBLIC_DEV_AUTO_LOGIN="false"` no web.
 **Nunca ative em produção** (a API já bloqueia com NODE_ENV=production).
 
 Se aparecer "API indisponível", inicie os dois serviços pela raiz do repositório com `npm run dev` e confira
-http://localhost:3333/api/health. Se a resposta indicar `permission denied`, execute
-`supabase/migrations/20261119000100_service_role_grants.sql` no SQL Editor do Supabase. Ela concede permissões
-somente ao `service_role`, usado pelo backend; não libera as tabelas para acesso público.
+http://localhost:3333/api/health.
 
-Seed: `owner@demo.com`, `manager@demo.com`, `dev@demo.com` — senha `Demo@12345`.
+Contas de teste fixas — todas usam a senha `Demo@12345`:
+
+| Visão | E-mail |
+| --- | --- |
+| Super Admin | `superadmin@demo.com` |
+| Owner | `owner@demo.com` |
+| Admin | `admin@demo.com` |
+| Manager | `manager@demo.com` |
+| Team Leader | `teamleader@demo.com` |
+| Developer | `developer@demo.com` |
+| Developer (compatibilidade) | `dev@demo.com` |
+| Guest | `guest@demo.com` |
+
+As contas também podem ser abertas pelos atalhos da tela de login. Execute `npm run setup` após configurar o Supabase para criar ou atualizar todas elas.
 
 Testes das regras de ponto: `npm test -w apps/api`.
 JWT expira em 8 horas por padrão; personalize com `JWT_EXPIRES_IN` (ex.: `15m`, `8h`, `7d`). Sessões expiradas são invalidadas no cliente quando a API responde `401`.

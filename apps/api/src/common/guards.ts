@@ -7,12 +7,15 @@ import { IS_PUBLIC_KEY, MIN_ROLE_KEY } from './decorators';
 import { hasMinRole } from './roles';
 import { SupabaseService } from '../supabase/supabase.service';
 import { Request } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { readDemoToken } from '../auth/demo-auth';
 
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly supabase: SupabaseService,
+    private readonly config: ConfigService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,6 +29,13 @@ export class SupabaseAuthGuard implements CanActivate {
     const authorization = request.headers.authorization;
     const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null;
     if (!token) throw new ForbiddenException('Token de acesso obrigatório');
+
+    if (token.startsWith('demo.')) {
+      const demoUser = readDemoToken(token, this.config.getOrThrow<string>('JWT_SECRET'));
+      if (!demoUser) throw new ForbiddenException('Sessão demo inválida ou expirada');
+      request.user = demoUser;
+      return true;
+    }
 
     const { data, error } = await this.supabase.publicClient.auth.getUser(token);
     if (error || !data.user) throw new ForbiddenException('Sessão inválida ou expirada');

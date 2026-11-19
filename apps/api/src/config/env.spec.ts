@@ -12,9 +12,13 @@ test('usa configuração válida do Supabase', () => {
   assert.equal(validateEnv(validConfig), validConfig);
 });
 
-test('rejeita configuração incompleta do Supabase', () => {
+test('rejeita URL inválida do Supabase', () => {
   assert.throws(
     () => validateEnv({ SUPABASE_URL: 'inválida' }),
-    /SUPABASE_URL é obrigatório/,
+    /SUPABASE_URL deve ser uma URL válida/,
   );
+});
+
+test('permite iniciar sem Supabase para acessar contas demo', () => {
+  assert.deepEqual(validateEnv({}), {});
 });

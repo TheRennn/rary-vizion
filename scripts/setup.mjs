@@ -1,5 +1,6 @@
-// Prepara os arquivos de ambiente para o Supabase. Idempotente.
+// Prepara os arquivos de ambiente locais. Idempotente.
 import { copyFileSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
 function ensureEnv(target, example, requiredLine) {
   if (!existsSync(target)) copyFileSync(example, target);
@@ -10,6 +11,12 @@ function ensureEnv(target, example, requiredLine) {
 ensureEnv('apps/api/.env', 'apps/api/.env.example', 'DEV_AUTO_LOGIN="true"');
 ensureEnv('apps/web/.env.local', 'apps/web/.env.example', 'NEXT_PUBLIC_DEV_AUTO_LOGIN="true"');
 
-console.log('\nConfigure as variáveis Supabase nos arquivos .env.');
-console.log('Execute supabase/migrations/20261119000000_initial.sql no SQL Editor do Supabase.');
-console.log('Depois rode: npm run dev');
+console.log('Preparando banco local e contas demo...');
+
+const dbPush = spawnSync('npm', ['run', 'db:push', '-w', 'apps/api'], { stdio: 'inherit', shell: true });
+if (dbPush.status !== 0) process.exit(dbPush.status ?? 1);
+
+const dbSeed = spawnSync('npm', ['run', 'db:seed', '-w', 'apps/api'], { stdio: 'inherit', shell: true });
+if (dbSeed.status !== 0) process.exit(dbSeed.status ?? 1);
+
+console.log('\nContas demo prontas. Senha fixa: Demo@12345');

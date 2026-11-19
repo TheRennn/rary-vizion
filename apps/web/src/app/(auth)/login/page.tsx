@@ -12,6 +12,29 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const demoAccounts = [
+    ['Super Admin', 'superadmin@demo.com'],
+    ['Owner', 'owner@demo.com'],
+    ['Admin', 'admin@demo.com'],
+    ['Manager', 'manager@demo.com'],
+    ['Team Leader', 'teamleader@demo.com'],
+    ['Developer', 'developer@demo.com'],
+    ['Guest', 'guest@demo.com'],
+  ] as const;
+
+  async function loginDemo(email: string) {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await login(email, 'Demo@12345');
+      router.replace('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao entrar');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -58,6 +81,23 @@ export default function LoginPage() {
         <button className="btn w-full" disabled={submitting}>
           {submitting ? 'Entrando…' : 'Entrar'}
         </button>
+        <div className="space-y-2 border-t border-line pt-4">
+          <p className="text-xs font-medium text-muted">Contas de teste — senha: <code>Demo@12345</code></p>
+          <div className="grid grid-cols-2 gap-2">
+            {demoAccounts.map(([label, email]) => (
+              <button
+                key={email}
+                type="button"
+                className="btn-ghost text-xs"
+                disabled={submitting}
+                onClick={() => void loginDemo(email)}
+                title={email}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="text-center text-sm text-muted">
           Sua empresa ainda não usa o Vizion?{' '}
           <Link href="/register" className="text-primary hover:underline">Criar conta</Link>
