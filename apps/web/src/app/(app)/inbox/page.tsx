@@ -30,7 +30,7 @@ export default function InboxPage() {
   const filtered = items.filter((item) => filter === 'all' || !item.readAt);
   return (
     <div className="space-y-4">
-      <header className="page-heading"><div><p className="eyebrow">Central de operações</p><h1>Inbox</h1></div><button className="btn-ghost" onClick={() => void readAll()} disabled={!items.some((item) => !item.readAt)}>Marcar tudo como lido</button></header>
+      <header className="page-heading"><div><p className="eyebrow">Central de operações</p><h1>Caixa de entrada</h1></div><button className="btn-ghost" onClick={() => void readAll()} disabled={!items.some((item) => !item.readAt)}>Marcar tudo como lido</button></header>
       {error && <p className="error-state" role="alert">{error}</p>}
       <section className="card overflow-hidden">
         <div className="flex items-center gap-2 border-b border-line/70 p-3"><button className={filter === 'all' ? 'btn' : 'btn-ghost'} onClick={() => setFilter('all')}>Todas</button><button className={filter === 'unread' ? 'btn' : 'btn-ghost'} onClick={() => setFilter('unread')}>Não lidas · {items.filter((item) => !item.readAt).length}</button></div>

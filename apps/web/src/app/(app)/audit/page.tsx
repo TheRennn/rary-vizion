@@ -14,7 +14,7 @@ const ACTION_LABEL: Record<string, string> = {
   'user.archived': 'Arquivou colaborador',
   'user.reactivated': 'Reativou colaborador',
   'department.created': 'Criou departamento',
-  'user.login': 'Acessou o workspace',
+  'user.login': 'Acessou o espaço de trabalho',
 };
 
 export default function AuditPage() {
@@ -42,7 +42,7 @@ export default function AuditPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeading eyebrow="Governança" title="Auditoria" description="Atividades registradas no workspace." />
+      <PageHeading eyebrow="Governança" title="Auditoria" description="Atividades registradas no espaço de trabalho." />
 
       {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300">{error}</p>}
 
@@ -57,7 +57,7 @@ export default function AuditPage() {
         {logs === null ? (
           <p className="p-5 text-sm text-muted">Carregando auditoria…</p>
         ) : logs.length === 0 ? (
-          <EmptyState title="Nenhuma atividade registrada" description="As ações do workspace aparecerão aqui quando forem registradas." />
+          <EmptyState title="Nenhuma atividade registrada" description="As ações do espaço de trabalho aparecerão aqui quando forem registradas." />
         ) : (
           <DataTable
             rows={logs}

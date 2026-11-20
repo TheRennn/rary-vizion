@@ -11,13 +11,13 @@ export const ROLE_RANK: Record<Role, number> = {
 };
 
 export const ROLE_LABEL: Record<Role, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  OWNER: 'Company Owner',
-  ADMIN: 'Administrator',
-  MANAGER: 'Manager',
-  TEAM_LEADER: 'Team Leader',
-  DEVELOPER: 'Developer',
-  GUEST: 'Guest',
+  SUPER_ADMIN: 'Superadministrador',
+  OWNER: 'Proprietário da empresa',
+  ADMIN: 'Administrador',
+  MANAGER: 'Gestor',
+  TEAM_LEADER: 'Líder de equipe',
+  DEVELOPER: 'Desenvolvedor',
+  GUEST: 'Convidado',
 };
 
 export const hasMinRole = (role: Role, min: Role) => ROLE_RANK[role] >= ROLE_RANK[min];

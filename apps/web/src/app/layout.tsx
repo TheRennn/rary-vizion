@@ -5,7 +5,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'RARY Vizion',
-  description: 'The Workspace for Developers',
+  description: 'O espaço de trabalho para equipes',
   icons: {
     icon: '/Eye-RARYVizion.svg',
     shortcut: '/Eye-RARYVizion.svg',

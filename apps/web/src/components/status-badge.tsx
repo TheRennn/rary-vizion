@@ -3,7 +3,7 @@ import type { PresenceStatus } from '@/lib/types';
 const STYLE: Record<PresenceStatus, { label: string; dot: string }> = {
   WORKING: { label: 'Em jornada', dot: 'bg-ok' },
   ON_BREAK: { label: 'Em pausa', dot: 'bg-warn' },
-  OFFLINE: { label: 'Offline', dot: 'bg-muted' },
+  OFFLINE: { label: 'Fora da jornada', dot: 'bg-muted' },
 };
 
 export function StatusBadge({ status }: { status: PresenceStatus }) {

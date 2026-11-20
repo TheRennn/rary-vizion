@@ -12,23 +12,23 @@ import type { Employee } from '@/lib/types';
 
 type NavItem = { href: string; label: string; icon: string; admin?: boolean; soon?: boolean };
 const GROUPS: { label: string; items: NavItem[] }[] = [
-  { label: 'Workspace', items: [
-    { href: '/dashboard', label: 'Dashboard', icon: 'grid' },
-    { href: '/inbox', label: 'Inbox', icon: 'inbox' },
-    { href: '/workspace', label: 'Meu workspace', icon: 'home' },
+  { label: 'Espaço de trabalho', items: [
+    { href: '/dashboard', label: 'Painel', icon: 'grid' },
+    { href: '/inbox', label: 'Caixa de entrada', icon: 'inbox' },
+    { href: '/workspace', label: 'Meu espaço de trabalho', icon: 'home' },
   ] },
   { label: 'Organização', items: [
-    { href: '/workforce', label: 'Workforce', icon: 'users' },
-    { href: '/time', label: 'Time', icon: 'clock' },
-    { href: '/projects', label: 'Projects', icon: 'folder' },
+    { href: '/workforce', label: 'Equipe', icon: 'users' },
+    { href: '/time', label: 'Jornada', icon: 'clock' },
+    { href: '/projects', label: 'Projetos', icon: 'folder' },
     { href: '/chat', label: 'Chat', icon: 'chat' },
-    { href: '/voice', label: 'Voice', icon: 'mic', soon: true },
-    { href: '/meetings', label: 'Meetings', icon: 'video' },
-    { href: '/monitor', label: 'Monitor', icon: 'activity', soon: true },
-    { href: '/intelligence', label: 'Intelligence', icon: 'spark', soon: true },
-    { href: '/documents', label: 'Documents', icon: 'file', soon: true },
-    { href: '/reports', label: 'Reports', icon: 'chart' },
-    { href: '/automations', label: 'Automations', icon: 'bolt', soon: true },
+    { href: '/voice', label: 'Voz', icon: 'mic', soon: true },
+    { href: '/meetings', label: 'Reuniões', icon: 'video' },
+    { href: '/monitor', label: 'Monitoramento', icon: 'activity', soon: true },
+    { href: '/intelligence', label: 'Inteligência', icon: 'spark', soon: true },
+    { href: '/documents', label: 'Documentos', icon: 'file', soon: true },
+    { href: '/reports', label: 'Relatórios', icon: 'chart' },
+    { href: '/automations', label: 'Automações', icon: 'bolt', soon: true },
   ] },
   { label: 'Administração', items: [
     { href: '/audit', label: 'Auditoria', icon: 'shield', admin: true },
@@ -82,7 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [peopleLoaded, setPeopleLoaded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  const currentLabel = ROUTE_NAMES[pathname] ?? (pathname.startsWith('/projects/') ? 'Projects' : 'RARY Vizion');
+  const currentLabel = ROUTE_NAMES[pathname] ?? (pathname.startsWith('/projects/') ? 'Projetos' : 'RARY Vizion');
 
   useEffect(() => {
     setCollapsed(localStorage.getItem('vizion.sidebar.collapsed') === 'true');
@@ -127,9 +127,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const commands: Command[] = useMemo(() => [
     ...GROUPS.flatMap((group) => group.items.filter((item) => !item.admin || isAdmin).map((item) => ({ label: item.label, hint: 'Navegar', href: item.href, icon: item.icon }))),
-    { label: 'Abrir Time', hint: 'Ir para registro de jornada', href: '/time', icon: 'clock' },
-    { label: 'Abrir Workforce', hint: 'Ir para gestão de pessoas', href: '/workforce', icon: 'plus' },
-    { label: 'Informações do workspace', hint: 'Abrir painel contextual', action: () => user && openContextPanel({ title: user.company.name, eyebrow: 'Workspace', description: 'Espaço da organização no RARY Vizion.', fields: [['Plano', 'Ambiente demo'], ['Seu papel', ROLE_LABEL[user.role]], ['Conta', user.email]] }), icon: 'panel' },
+    { label: 'Abrir jornada', hint: 'Ir para o registro de jornada', href: '/time', icon: 'clock' },
+    { label: 'Abrir equipe', hint: 'Ir para a gestão de pessoas', href: '/workforce', icon: 'plus' },
+    { label: 'Informações do espaço de trabalho', hint: 'Abrir painel contextual', action: () => user && openContextPanel({ title: user.company.name, eyebrow: 'Espaço de trabalho', description: 'Espaço da organização no RARY Vizion.', fields: [['Plano', 'Ambiente de demonstração'], ['Seu papel', ROLE_LABEL[user.role]], ['Conta', user.email]] }), icon: 'panel' },
     ...people.filter((person) => `${person.name} ${person.email} ${person.jobTitle ?? ''} ${person.department?.name ?? ''}`.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR'))).slice(0, 8).map((person) => ({
       label: person.name,
       hint: `Colaborador · ${person.department?.name ?? 'sem departamento'}`,
@@ -174,11 +174,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {!collapsed && (
-        <button className="workspace-switcher" onClick={() => user && openContextPanel({ title: user.company.name, eyebrow: 'Workspace atual', description: 'Informações da organização e da sua conta.', fields: [['Membro', user.name], ['Papel', ROLE_LABEL[user.role]], ['E-mail', user.email]] })}>
+        <button className="workspace-switcher" onClick={() => user && openContextPanel({ title: user.company.name, eyebrow: 'Espaço de trabalho atual', description: 'Informações da organização e da sua conta.', fields: [['Membro', user.name], ['Papel', ROLE_LABEL[user.role]], ['E-mail', user.email]] })}>
           <span className="workspace-dot">{user?.company.name?.slice(0, 1).toUpperCase() || 'R'}</span><span className="truncate">{user?.company.name}</span><span className="ml-auto text-muted">⌄</span>
         </button>
       )}
-      {collapsed && <button className="workspace-dot mx-auto my-2" title={user?.company.name} onClick={() => user && openContextPanel({ title: user.company.name, eyebrow: 'Workspace' })}>{user?.company.name?.slice(0, 1).toUpperCase() || 'R'}</button>}
+      {collapsed && <button className="workspace-dot mx-auto my-2" title={user?.company.name} onClick={() => user && openContextPanel({ title: user.company.name, eyebrow: 'Espaço de trabalho' })}>{user?.company.name?.slice(0, 1).toUpperCase() || 'R'}</button>}
 
       <button className="sidebar-search" title="Pesquisar (Ctrl K)" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>{collapsed ? '' : 'Pesquisar'}</span>{!collapsed && <kbd>Ctrl K</kbd>}</button>
       <nav className="sidebar-navigation" aria-label="Navegação principal">
@@ -191,7 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div className="sidebar-bottom">
         <button className="sidebar-collapse" onClick={toggleCollapsed} title={collapsed ? 'Expandir navegação' : 'Recolher navegação'}><span className={collapsed ? 'rotate-180' : ''}><Icon name="panel" /></span>{!collapsed && <span>Recolher menu</span>}</button>
-        <button className="profile-row" onClick={() => user && openContextPanel({ title: user.name, eyebrow: 'Seu perfil', description: 'Sessão atual do workspace.', fields: [['E-mail', user.email], ['Função', ROLE_LABEL[user.role]], ['Organização', user.company.name]], actions: [{ label: 'Sair da conta', onClick: logout }] })}>
+        <button className="profile-row" onClick={() => user && openContextPanel({ title: user.name, eyebrow: 'Seu perfil', description: 'Sessão atual do espaço de trabalho.', fields: [['E-mail', user.email], ['Função', ROLE_LABEL[user.role]], ['Organização', user.company.name]], actions: [{ label: 'Sair da conta', onClick: logout }] })}>
           <span className="avatar-small">{user?.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>{!collapsed && <span className="min-w-0 flex-1 text-left"><span className="block truncate text-xs font-medium">{user?.name}</span><span className="block truncate text-[10px] text-muted">{user ? ROLE_LABEL[user.role] : ''}</span></span>}<span className="profile-more">•••</span>
         </button>
       </div>
@@ -205,7 +205,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <button className="mobile-menu-button md:hidden" aria-label="Abrir navegação" onClick={() => { setCollapsed(false); localStorage.setItem('vizion.sidebar.collapsed', 'false'); setMobileOpen(true); }}>☰</button>
         <div className="topbar-breadcrumb"><span className="text-muted">RARY Vizion</span><Icon name="chevron" className="h-3 w-3 text-muted/60" /><span>{currentLabel}</span></div>
         <div className="ml-auto flex items-center gap-1.5">
-          <button className="topbar-search" onClick={() => setCommandOpen(true)} aria-label="Pesquisar workspace"><Icon name="search" /><span>Pesquisar</span><kbd>Ctrl K</kbd></button>
+          <button className="topbar-search" onClick={() => setCommandOpen(true)} aria-label="Pesquisar no espaço de trabalho"><Icon name="search" /><span>Pesquisar</span><kbd>Ctrl K</kbd></button>
           <button className="icon-button" aria-label="Notificações" title="Notificações" onClick={() => router.push('/inbox')}><Icon name="bell" /></button>
           <button className="avatar-small topbar-avatar" aria-label="Abrir perfil" onClick={() => user && openContextPanel({ title: user.name, eyebrow: 'Seu perfil', fields: [['E-mail', user.email], ['Papel', ROLE_LABEL[user.role]]] })}>{user?.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</button>
         </div>
@@ -215,7 +215,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {mobileOpen && <div className="mobile-nav-overlay md:hidden"><button className="mobile-nav-backdrop" aria-label="Fechar navegação" onClick={() => setMobileOpen(false)} />{sidebar}</div>}
 
       {commandOpen && <div className="command-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCommandOpen(false); }}>
-        <section className="command-dialog" role="dialog" aria-modal="true" aria-label="Command menu">
+        <section className="command-dialog" role="dialog" aria-modal="true" aria-label="Menu de comandos">
           <div className="command-input-wrap"><Icon name="search" className="h-4 w-4 shrink-0 text-muted" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={onCommandKeyDown} placeholder="Ir para… ou pesquisar uma ação" aria-label="Pesquisar comandos" /><kbd>ESC</kbd></div>
           <div className="command-results" role="listbox">{filteredCommands.map((command, index) => <button key={`${command.label}-${command.hint}`} role="option" aria-selected={activeIndex === index} className={`command-option ${activeIndex === index ? 'command-option-active' : ''}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => navigate(command)}><span className="command-icon"><Icon name={command.icon} /></span><span className="flex-1 text-left">{command.label}</span><span className="text-xs text-muted">{command.hint}</span></button>)}{filteredCommands.length === 0 && <div className="px-4 py-8 text-center text-sm text-muted">Nenhum resultado para “{query}”.</div>}</div>
           <div className="command-footer"><span>↑↓ navegar</span><span>↵ abrir</span><span>Esc fechar</span></div>

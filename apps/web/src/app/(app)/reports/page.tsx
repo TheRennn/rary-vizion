@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { TimeEntry } from '@/lib/types';
 
+const EVENT_LABEL: Record<string, string> = { CLOCK_IN: 'Entrada', BREAK_START: 'Início do intervalo', BREAK_END: 'Retorno do intervalo', CLOCK_OUT: 'Saída' };
+
 export default function ReportsPage() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +24,11 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-4">
-      <header className="page-heading"><div><p className="eyebrow">Dados auditáveis</p><h1>Reports</h1></div><button className="btn" onClick={exportCsv} disabled={entries.length === 0}>Exportar jornada CSV</button></header>
+      <header className="page-heading"><div><p className="eyebrow">Dados auditáveis</p><h1>Relatórios</h1></div><button className="btn" onClick={exportCsv} disabled={entries.length === 0}>Exportar jornada CSV</button></header>
       {error && <p className="error-state" role="alert">{error}</p>}
       <section className="card overflow-hidden">
         <div className="border-b border-line/70 p-4"><p className="eyebrow">Relatório de jornada</p><h2 className="mt-1 text-sm font-semibold">{entries.length} registros encontrados</h2></div>
-        <div className="data-table-scroll"><table className="data-table"><thead><tr><th>Data e hora</th><th>Evento</th><th>Observação</th></tr></thead><tbody>{entries.slice(0, 100).map((entry) => <tr key={entry.id}><td>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(entry.recordedAt))}</td><td>{entry.type}</td><td>{entry.note ?? '—'}</td></tr>)}</tbody></table></div>
+        <div className="data-table-scroll"><table className="data-table"><thead><tr><th>Data e hora</th><th>Evento</th><th>Observação</th></tr></thead><tbody>{entries.slice(0, 100).map((entry) => <tr key={entry.id}><td>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(entry.recordedAt))}</td><td>{EVENT_LABEL[entry.type] ?? entry.type}</td><td>{entry.note ?? '—'}</td></tr>)}</tbody></table></div>
       </section>
     </div>
   );

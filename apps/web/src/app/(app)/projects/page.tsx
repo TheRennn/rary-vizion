@@ -12,6 +12,8 @@ const columns = [
   { id: 'REVIEW', label: 'Em revisão' },
   { id: 'DONE', label: 'Concluído' },
 ];
+const PROJECT_STATUS: Record<string, string> = { PLANNING: 'Em planejamento', ACTIVE: 'Ativo', ON_HOLD: 'Pausado', COMPLETED: 'Concluído', ARCHIVED: 'Arquivado' };
+const PRIORITY: Record<string, string> = { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta', URGENT: 'Urgente' };
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -66,7 +68,7 @@ export default function ProjectsPage() {
   return (
     <div className="space-y-4">
       <header className="page-heading">
-        <div><p className="eyebrow">Gestão operacional</p><h1>Projects</h1></div>
+        <div><p className="eyebrow">Gestão operacional</p><h1>Projetos</h1></div>
         <div className="flex gap-2">
           <button className={view === 'board' ? 'btn' : 'btn-ghost'} onClick={() => setView('board')}>Kanban</button>
           <button className={view === 'list' ? 'btn' : 'btn-ghost'} onClick={() => setView('list')}>Lista</button>
@@ -86,7 +88,7 @@ export default function ProjectsPage() {
               <li key={project.id}>
                 <button className={`w-full text-left ${selectedId === project.id ? 'text-primary' : ''}`} onClick={() => setSelectedId(project.id)}>
                   <span className="block truncate text-sm font-medium">{project.name}</span>
-                  <span className="mt-1 block text-[10px] text-muted">{project.tasks.length} tarefas · {project.status}</span>
+                  <span className="mt-1 block text-[10px] text-muted">{project.tasks.length} tarefas · {PROJECT_STATUS[project.status] ?? project.status}</span>
                 </button>
               </li>
             ))}
@@ -100,14 +102,14 @@ export default function ProjectsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><p className="eyebrow">Projeto ativo</p><h2 className="mt-1 text-lg font-semibold">{selected.name}</h2>{selected.description && <p className="mt-1 text-xs text-muted">{selected.description}</p>}</div>
                   <select className="input" value={selected.status} onChange={async (event) => { await api(`/projects/${selected.id}`, { method: 'PATCH', body: { status: event.target.value } }); await load(); }}>
-                    {['PLANNING','ACTIVE','ON_HOLD','COMPLETED','ARCHIVED'].map((status) => <option key={status}>{status}</option>)}
+                    {Object.entries(PROJECT_STATUS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </div>
               </section>
               <form onSubmit={createTask} className="filter-bar">
                 <input name="title" className="input min-w-[220px] flex-1" placeholder="Nova tarefa" required />
                 <select name="status" className="input" defaultValue="TODO">{columns.map((column) => <option key={column.id} value={column.id}>{column.label}</option>)}</select>
-                <select name="priority" className="input" defaultValue="MEDIUM"><option value="LOW">Baixa</option><option value="MEDIUM">Média</option><option value="HIGH">Alta</option><option value="URGENT">Urgente</option></select>
+                <select name="priority" className="input" defaultValue="MEDIUM">{Object.entries(PRIORITY).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
                 <button className="btn" disabled={busy}>Adicionar</button>
               </form>
               {view === 'board' ? (
@@ -116,14 +118,14 @@ export default function ProjectsPage() {
                     <section key={column.id} className="card min-h-64 p-3">
                       <div className="mb-3 flex justify-between text-xs"><span className="font-medium">{column.label}</span><span className="text-muted">{projectTasks.filter((task) => task.status === column.id).length}</span></div>
                       <div className="space-y-2">{projectTasks.filter((task) => task.status === column.id).map((task) => <article key={task.id} className="rounded-lg border border-line/70 bg-surface2/30 p-3">
-                        <p className="text-sm font-medium">{task.title}</p><p className="mt-2 text-[10px] text-muted">{task.priority}</p>
+                        <p className="text-sm font-medium">{task.title}</p><p className="mt-2 text-[10px] text-muted">{PRIORITY[task.priority] ?? task.priority}</p>
                         <select className="input mt-3 w-full" value={task.status} onChange={(event) => void changeStatus(selected.id, task.id, event.target.value)}>{columns.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select>
                       </article>)}</div>
                     </section>
                   ))}
                 </div>
               ) : (
-                <section className="card overflow-hidden"><table className="data-table"><thead><tr><th>Tarefa</th><th>Status</th><th>Prioridade</th></tr></thead><tbody>{projectTasks.map((task) => <tr key={task.id}><td>{task.title}</td><td><select className="input" value={task.status} onChange={(event) => void changeStatus(selected.id, task.id, event.target.value)}>{columns.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></td><td>{task.priority}</td></tr>)}</tbody></table></section>
+                <section className="card overflow-hidden"><table className="data-table"><thead><tr><th>Tarefa</th><th>Status</th><th>Prioridade</th></tr></thead><tbody>{projectTasks.map((task) => <tr key={task.id}><td>{task.title}</td><td><select className="input" value={task.status} onChange={(event) => void changeStatus(selected.id, task.id, event.target.value)}>{columns.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></td><td>{PRIORITY[task.priority] ?? task.priority}</td></tr>)}</tbody></table></section>
               )}
             </div>
           )}

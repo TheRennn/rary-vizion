@@ -13,13 +13,13 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const demoAccounts = [
-    ['Super Admin', 'superadmin@demo.com'],
-    ['Owner', 'owner@demo.com'],
-    ['Admin', 'admin@demo.com'],
-    ['Manager', 'manager@demo.com'],
-    ['Team Leader', 'teamleader@demo.com'],
-    ['Developer', 'developer@demo.com'],
-    ['Guest', 'guest@demo.com'],
+    ['Superadministrador', 'superadmin@demo.com'],
+    ['Proprietário', 'owner@demo.com'],
+    ['Administrador', 'admin@demo.com'],
+    ['Gestor', 'manager@demo.com'],
+    ['Líder de equipe', 'teamleader@demo.com'],
+    ['Desenvolvedor', 'developer@demo.com'],
+    ['Convidado', 'guest@demo.com'],
   ] as const;
 
   async function loginDemo(email: string) {
@@ -61,7 +61,7 @@ export default function LoginPage() {
           </div>
           <div>
             <p className="font-semibold">RARY Vizion</p>
-            <p className="text-xs text-muted">Workspace corporativo</p>
+            <p className="text-xs text-muted">Espaço de trabalho corporativo</p>
           </div>
         </div>
         <div>

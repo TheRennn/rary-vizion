@@ -418,7 +418,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
             <article className="card p-5">
               <div className="mb-5 flex items-end justify-between gap-3">
                 <div>
-                  <p className="eyebrow">Department performance</p>
+                  <p className="eyebrow">Desempenho por departamento</p>
                   <h2 className="mt-1 text-lg font-semibold">Equipe por departamento</h2>
                 </div>
                 <a href="/workforce" className="text-xs font-medium text-primary hover:text-fg">
@@ -431,13 +431,13 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
             <article className="card p-5">
               <div className="mb-5 flex items-end justify-between gap-3">
                 <div>
-                  <p className="eyebrow">Recent activity</p>
+                  <p className="eyebrow">Atividade recente</p>
                   <h2 className="mt-1 text-lg font-semibold">Atividade recente</h2>
                 </div>
                 <span className="text-xs text-muted">{departmentId ? 'Atividade da empresa' : 'Eventos registrados'}</span>
               </div>
               {overview.activity.length === 0 ? (
-                <EmptyState title="Sem atividade recente" description="Ações do workspace aparecerão aqui conforme forem registradas." />
+                <EmptyState title="Sem atividade recente" description="As ações do espaço de trabalho aparecerão aqui conforme forem registradas." />
               ) : (
                 <ActivityFeed>
                   {overview.activity.map((activity) => (
@@ -485,7 +485,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               )}
               {!overview.availability.intelligence && (
                 <FeatureUnavailable
-                  title="Vizion Intelligence"
+                  title="Inteligência Vizion"
                   description="Insights ficam indisponíveis até existir uma integração e dados operacionais que os fundamentem."
                 />
               )}
@@ -516,7 +516,7 @@ function PersonalDashboard({ user }: { user: AuthUser }) {
         <div className="relative min-h-[280px] p-8 sm:p-10">
           <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
           <p className="eyebrow">Sua jornada</p>
-          <h2 className="mt-4 text-xl font-semibold">Comece o dia no Vizion Time</h2>
+          <h2 className="mt-4 text-xl font-semibold">Comece o dia no Vizion Jornada</h2>
           <p className="mt-3 max-w-xl text-sm leading-7 text-muted">
             Registre entrada, intervalos e saída em uma experiência simples e segura. O painel operacional é habilitado para gestores.
           </p>

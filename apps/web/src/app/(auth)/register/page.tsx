@@ -41,12 +41,12 @@ export default function RegisterPage() {
           <div className="grid h-11 w-11 place-items-center rounded-2xl border border-primary/20 bg-surface2">
             <BrandIcon size={36} className="h-9 w-9 object-contain" />
           </div>
-          <div><p className="font-semibold">RARY Vizion</p><p className="text-xs text-muted">Novo workspace</p></div>
+          <div><p className="font-semibold">RARY Vizion</p><p className="text-xs text-muted">Novo espaço de trabalho</p></div>
         </div>
         <div>
           <p className="eyebrow mb-2">Comece agora</p>
           <h1 className="text-2xl font-semibold tracking-tight">Criar empresa</h1>
-          <p className="mt-1 text-sm text-muted">Você será o proprietário do workspace.</p>
+          <p className="mt-1 text-sm text-muted">Você será o proprietário do espaço de trabalho.</p>
         </div>
         <label className="block space-y-2 text-sm font-medium">
           Nome da empresa

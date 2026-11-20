@@ -144,7 +144,7 @@ export default function WorkforcePage() {
       <header className="flex items-end justify-between">
         <div>
           <p className="eyebrow mb-2">Gestão de pessoas</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Workforce</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Equipe</h1>
           <p className="mt-1 text-sm text-muted">{user.company.name}</p>
         </div>
         <span className="hidden rounded-xl border border-line px-3 py-2 text-xs text-muted sm:block">{filteredEmployees.length} de {employees?.length ?? 0} pessoas</span>
