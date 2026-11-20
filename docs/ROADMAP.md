@@ -40,20 +40,21 @@ Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” si
 
 ## Sprint 04 — Chat e Comunicação
 
-- **Diagnóstico atualizado:** busca textual de mensagens já está disponível e limitada a conversas com participação; canais/grupos, threads e anexos continuam ausentes.
+- **Diagnóstico atualizado:** busca textual de mensagens já está disponível e limitada a conversas com participação; grupos nomeados persistidos foram adicionados, mas canais, threads e anexos continuam ausentes.
 - **Objetivo:** evoluir chat direto para comunicação interna confiável.
 - **Escopo:** `/chat`, módulos API `chat`, notificações.
 - **Funcionalidades:** grupos/canais, anexos, busca, respostas, reações, fixação, leitura e presença.
 - **Tarefas técnicas:**
   - [ ] Decidir e implementar transporte em tempo real com fallback/reconexão.
-  - [ ] Criar modelo e permissões para canais e grupos; validar adesão e remoção de participantes.
+  - [x] Criar grupos nomeados com membros ativos validados no servidor e escopo da empresa.
+  - [ ] Criar canais e fluxos de adesão/remoção de participantes.
   - [ ] Persistir anexos em storage autorizado, com limites e validação de tipo/tamanho.
   - [x] Implementar busca de mensagens respeitando participação e tenant (30 resultados máximos; cursor ainda pendente).
   - [ ] Completar recibos de leitura, notificações e estados de conexão.
   - [ ] Tratar envio duplicado, falha de rede e carregamento incremental na interface.
 - **Dependências:** Sprint 02; Sprint 03 para diretório de colaboradores consolidado.
 - **Critérios de conclusão:** [ ] mensagens sincronizam entre sessões; [ ] acesso indevido negado; [ ] anexos e busca persistem; [ ] falhas/reconexões comunicadas; [ ] UX responsiva revisada.
-- **Prioridade:** Alta. **Status:** Parcial (conversa direta, histórico paginado e polling existentes).
+- **Prioridade:** Alta. **Status:** Parcial (conversas diretas e grupos, histórico paginado e polling; canais e colaboração avançada pendentes).
 
 ## Sprint 05 — Voice e Meetings
 
@@ -176,7 +177,7 @@ Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” si
 
 ## Sprint 13 — Chat: canais e colaboração
 
-- **Diagnóstico:** conversas diretas persistidas com polling e histórico paginado; inexistem canais, grupos, threads, busca e anexos.
+- **Diagnóstico:** conversas diretas e grupos nomeados persistidos, com polling e histórico paginado; inexistem canais, threads e anexos.
 - **Objetivo e prioridade:** habilitar colaboração em canais respeitando associação e escopo de empresa. **Prioridade:** Alta.
 - **Escopo e dependências:** API/schema Chat, `/chat`, notificações; depende de infraestrutura de sessão/tenant (Sprint 02) e decisão de storage/tempo real.
 - **Backend/banco:** modelo de canais e associação, regras de acesso, busca paginada e endpoint de criação de grupos; idempotência para mensagens; só implementar upload após escolher storage com controles de acesso.

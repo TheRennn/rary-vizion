@@ -9,13 +9,22 @@ Plataforma empresarial em monorepo para gestão de colaboradores, jornada, comun
 | Dashboard | Parcial, funcional | Resumo real de colaboradores, jornada, departamentos e auditoria; filtros por período e departamento com agregações de pessoas/jornada, atualização periódica. Atividade recente continua no escopo da empresa. Projetos, tarefas, reuniões e IA indisponíveis. |
 | Workforce | Parcial, funcional | Cadastro, edição e arquivamento/reativação com auditoria; pesquisa e filtros por nome/e-mail/cargo, departamento, status e papel; tabela e cards. Filtros atuais são locais; hierarquia e histórico profissional ainda não existem. |
 | Time | Parcial, funcional | Registro de ponto, hoje, histórico e visão de equipe com regras de cálculo. Faltam justificativas, aprovações e relatórios completos. |
-| Chat | Parcial, funcional | Conversas diretas persistidas, paginação, leitura, polling e busca de mensagens apenas nas conversas do usuário. Sem grupos/canais, anexos, reações ou tempo real via socket. |
+| Chat | Parcial, funcional | Conversas diretas e grupos nomeados persistidos, com membros ativos da mesma empresa, paginação, leitura, polling e busca limitada às conversas do usuário. Canais, threads, anexos, reações e tempo real via socket ainda pendentes. |
 | Voice | Não implementado | Item apenas informativo na navegação; sem backend ou interface funcional. |
 | Meetings | Não implementado | Sem agenda, salas ou integração de áudio/vídeo. |
 | Monitor | Não implementado | Sem monitoramento operacional. Definir limites de privacidade e permissões antes da implementação. |
 | Projects | Não implementado | Sem projetos ou tarefas persistidos. |
 | Intelligence | Não implementado | Sem integração de IA ou contexto empresarial autorizado. |
 | Auditoria | Parcial, funcional | Consulta de eventos com acesso administrativo; ampliar filtros/exportação e validar retenção. |
+
+## Sprint 06 — Implementação funcional parcial
+
+- **Projetos:** novas rotas REST `GET/POST/PATCH /api/projects`, CRUD operacional de projetos e tarefas, Kanban e visualização em lista em `/projects`. Dados persistidos no Prisma/SQLite com isolamento por empresa.
+- **Reuniões:** novas rotas REST `GET/POST /api/meetings` e `POST /api/meetings/join`; criação com código único, participantes persistidos e convites de notificação. `/meetings` oferece criação, agenda e validação por código. A mídia ao vivo continua bloqueada até LiveKit ser configurado.
+- **Inbox:** `/inbox` consume notificações persistidas por usuário, permite leitura individual e leitura global.
+- **Reports:** `/reports` mostra os registros reais de jornada e exporta CSV.
+- **Shell:** o botão de notificações navega para a Inbox; projetos, reuniões e relatórios deixam de ser estados fictícios na navegação.
+- **Integrações externas pendentes:** Voice e LiveKit não são simulados; Documents depende de armazenamento privado; Intelligence depende de provedor e credenciais; PDF não é emitido sem uma biblioteca de relatório instalada.
 
 O visual global usa tokens centralizados em `apps/web/src/app/globals.css` e Tailwind em `apps/web/tailwind.config.ts`. A navegação fica em `apps/web/src/components/sidebar.tsx`. As páginas “soon” não simulam dados ou ações inexistentes.
 
@@ -63,7 +72,7 @@ O plano executável, com objetivos, escopo, páginas, tarefas, dependências, cr
 
 - **Concluído nesta etapa:** Workforce recebeu pesquisa/filtros e visualizações tabela/cards; API ganhou edição e arquivamento reativável, com hierarquia de papéis, validação de departamento e auditoria. Login/cadastro local foi ligado a credenciais persistidas. Dashboard ganhou filtro server-side por departamento para colaboradores e métricas de jornada. Chat ganhou busca limitada às conversas participantes. Cadastro Supabase deixou de criar uma segunda empresa além da criada pelo trigger.
 - **Parcial:** o Sprint global ainda não implementa Dashboard 2.0, Time 2.0, Chat 2.0 ou novos módulos. O roadmap registra as dependências reais.
-- **Pendente:** paginação server-side de Workforce, histórico profissional, solicitações de ajuste/aprovação de jornada, grupos/canais, projetos, documentos, notificações e demais módulos.
+- **Pendente:** paginação server-side de Workforce, histórico profissional, solicitações de ajuste/aprovação de jornada, canais, projetos, documentos, notificações e demais módulos.
 - **Banco/API:** sem mudança de schema; incluídos `PATCH /users/:id` e `departmentId` opcional em `/dashboard/overview`. Filtros de Workforce continuam no cliente; o dashboard filtra dados de presença/jornada no servidor.
 - **Validação:** `git diff --check` deve passar; build e testes dependem da instalação das dependências. Não declarar validação de runtime até executar `npm ci`, build e suíte de testes.
 - **Próxima etapa:** Sprint 12 — completar Workforce e Time com operações persistidas, histórico auditável e fluxos de aprovação.
@@ -73,6 +82,12 @@ Os próximos cinco sprints detalhados (12–16), incluindo escopo de backend, p�
 ### Próximo passo recomendado
 
 **Sprint 12 — Workforce e Time**, condicionado ao fechamento das pendências de segurança/persistência do Sprint 02: concluir operações de colaboradores, solicitações de jornada e aprovações auditáveis.
+
+### Briefing Sprint 05 — estado parcial
+
+- **Implementado neste recorte:** criação de grupos nomeados com pelo menos dois outros colaboradores ativos da mesma empresa, validação de associação no servidor, seleção de participantes e abertura do grupo. Conversas diretas mantêm o fluxo existente.
+- **Ainda não concluído:** os demais itens do briefing — Chat 2.0 completo, Voice, Meetings, Time, Workforce, Projects, Documents, Reports, Intelligence, Inbox, configurações, auditoria, integrações e microinterações — continuam com os estados descritos na tabela e no roadmap. Não foram criadas integrações simuladas.
+- **Validação após este recorte:** typecheck do frontend e da API; 22 testes da API passaram. O build de produção não foi repetido após as mudanças de grupos.
 
 ### Execução do Sprint 04 — Complete UI Overhaul
 
@@ -139,6 +154,7 @@ Os próximos cinco sprints detalhados (12–16), incluindo escopo de backend, p�
 | GET | `/api/time/today`, `/api/time/history` | Autenticado |
 | GET | `/api/time/team` | MANAGER+ |
 | GET/POST | `/api/chat/conversations` | Participante/autenticado conforme ação |
+| POST | `/api/chat/conversations/groups` | Autenticado; seleciona membros ativos da mesma empresa |
 | GET | `/api/chat/search?q=termo&limit=20` | Autenticado; apenas conversas das quais participa |
 | GET/POST | `/api/chat/conversations/:id/messages` | Participante |
 | PATCH | `/api/chat/conversations/:id/read` | Participante |

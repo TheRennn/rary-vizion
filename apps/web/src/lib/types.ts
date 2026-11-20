@@ -89,7 +89,9 @@ export interface ChatMessagePage {
 export interface ChatConversation {
   id: string;
   name: string | null;
+  type: string;
   peer: ChatPeer | null;
+  participants: ChatPeer[];
   updatedAt: string;
   lastMessage: ChatMessage | null;
   unread: boolean;

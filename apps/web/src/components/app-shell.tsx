@@ -14,20 +14,20 @@ type NavItem = { href: string; label: string; icon: string; admin?: boolean; soo
 const GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Workspace', items: [
     { href: '/dashboard', label: 'Dashboard', icon: 'grid' },
-    { href: '/inbox', label: 'Inbox', icon: 'inbox', soon: true },
+    { href: '/inbox', label: 'Inbox', icon: 'inbox' },
     { href: '/workspace', label: 'Meu workspace', icon: 'home' },
   ] },
   { label: 'Organização', items: [
     { href: '/workforce', label: 'Workforce', icon: 'users' },
     { href: '/time', label: 'Time', icon: 'clock' },
-    { href: '/projects', label: 'Projects', icon: 'folder', soon: true },
+    { href: '/projects', label: 'Projects', icon: 'folder' },
     { href: '/chat', label: 'Chat', icon: 'chat' },
     { href: '/voice', label: 'Voice', icon: 'mic', soon: true },
-    { href: '/meetings', label: 'Meetings', icon: 'video', soon: true },
+    { href: '/meetings', label: 'Meetings', icon: 'video' },
     { href: '/monitor', label: 'Monitor', icon: 'activity', soon: true },
     { href: '/intelligence', label: 'Intelligence', icon: 'spark', soon: true },
     { href: '/documents', label: 'Documents', icon: 'file', soon: true },
-    { href: '/reports', label: 'Reports', icon: 'chart', soon: true },
+    { href: '/reports', label: 'Reports', icon: 'chart' },
     { href: '/automations', label: 'Automations', icon: 'bolt', soon: true },
   ] },
   { label: 'Administração', items: [
@@ -206,7 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="topbar-breadcrumb"><span className="text-muted">RARY Vizion</span><Icon name="chevron" className="h-3 w-3 text-muted/60" /><span>{currentLabel}</span></div>
         <div className="ml-auto flex items-center gap-1.5">
           <button className="topbar-search" onClick={() => setCommandOpen(true)} aria-label="Pesquisar workspace"><Icon name="search" /><span>Pesquisar</span><kbd>Ctrl K</kbd></button>
-          <button className="icon-button" aria-label="Notificações" title="Notificações" onClick={() => openContextPanel({ title: 'Notificações', eyebrow: 'Inbox', description: 'A central ainda não está conectada a uma fonte de notificações persistentes.' })}><Icon name="bell" /></button>
+          <button className="icon-button" aria-label="Notificações" title="Notificações" onClick={() => router.push('/inbox')}><Icon name="bell" /></button>
           <button className="avatar-small topbar-avatar" aria-label="Abrir perfil" onClick={() => user && openContextPanel({ title: user.name, eyebrow: 'Seu perfil', fields: [['E-mail', user.email], ['Papel', ROLE_LABEL[user.role]]] })}>{user?.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</button>
         </div>
       </header>

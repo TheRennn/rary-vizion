@@ -14,7 +14,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "test": "node --test -r ts-node/register src/time/time.rules.spec.ts src/config/env.spec.ts src/dashboard/dashboard.metrics.spec.ts src/auth/demo-auth.spec.ts src/auth/local-auth.spec.ts src/common/http-exception.filter.spec.ts"
+    "test": "node --test -r ts-node/register src/time/time.rules.spec.ts src/config/env.spec.ts src/dashboard/dashboard.metrics.spec.ts src/auth/demo-auth.spec.ts src/auth/local-auth.spec.ts src/common/http-exception.filter.spec.ts src/chat/chat.service.spec.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

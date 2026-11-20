@@ -14,6 +14,9 @@ import { TimeModule } from './time/time.module';
 import { UsersModule } from './users/users.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { SupabaseAuthGuard } from './common/guards';
+import { ProjectsModule } from './projects/projects.module';
+import { MeetingsModule } from './meetings/meetings.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +31,9 @@ import { SupabaseAuthGuard } from './common/guards';
     DepartmentsModule,
     TimeModule,
     HealthModule,
+    ProjectsModule,
+    MeetingsModule,
+    NotificationsModule,
   ],
   providers: [
     // Ordem importa: autentica primeiro, depois valida papel.

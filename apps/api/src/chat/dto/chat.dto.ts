@@ -1,5 +1,9 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsInt,
   IsOptional,
   IsString,
@@ -13,6 +17,20 @@ import {
 export class CreateConversationDto {
   @IsUUID()
   targetUserId!: string;
+}
+
+export class CreateGroupConversationDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  name!: string;
+
+  @IsArray()
+  @ArrayUnique()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(30)
+  @IsUUID('4', { each: true })
+  participantIds!: string[];
 }
 
 export class SendMessageDto {

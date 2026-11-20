@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { AuthUser } from '../common/auth-user';
 import { PrismaService } from '../prisma/prisma.service';
-import { ListMessagesQueryDto, SearchMessagesQueryDto } from './dto/chat.dto';
+import {
+  CreateGroupConversationDto,
+  ListMessagesQueryDto,
+  SearchMessagesQueryDto,
+} from './dto/chat.dto';
 
 @Injectable()
 export class ChatService {
@@ -47,7 +51,7 @@ export class ChatService {
       conversation: {
         id: conversation.id,
         name: conversation.name,
-        peerName: conversation.participants[0]?.user.name ?? conversation.name ?? 'Conversa',
+        peerName: conversation.name ?? conversation.participants[0]?.user.name ?? 'Conversa',
       },
     }));
   }
@@ -78,7 +82,9 @@ export class ChatService {
       return {
         id: conversation.id,
         name: conversation.name,
-        peer,
+        type: conversation.type,
+        peer: conversation.type === 'DIRECT' ? peer : null,
+        participants: conversation.participants.map((participant) => participant.user),
         updatedAt: conversation.updatedAt,
         lastMessage,
         unread: !!lastMessage &&
@@ -114,7 +120,16 @@ export class ChatService {
 
     if (existing) {
       const peer = existing.participants.find((participant) => participant.userId !== user.id)?.user ?? target;
-      return { id: existing.id, name: existing.name, peer, updatedAt: existing.updatedAt, lastMessage: existing.messages[0] ?? null, unread: false };
+      return {
+        id: existing.id,
+        name: existing.name,
+        type: existing.type,
+        peer,
+        participants: existing.participants.map((participant) => participant.user),
+        updatedAt: existing.updatedAt,
+        lastMessage: existing.messages[0] ?? null,
+        unread: false,
+      };
     }
 
     const conversation = await this.prisma.conversation.create({
@@ -128,7 +143,69 @@ export class ChatService {
       },
     });
 
-    return { id: conversation.id, name: null, peer: target, updatedAt: conversation.updatedAt, lastMessage: null, unread: false };
+    return {
+      id: conversation.id,
+      name: null,
+      type: conversation.type,
+      peer: target,
+      participants: conversation.participants.map((participant) => participant.user),
+      updatedAt: conversation.updatedAt,
+      lastMessage: null,
+      unread: false,
+    };
+  }
+
+  async createGroupConversation(user: AuthUser, dto: CreateGroupConversationDto) {
+    const name = dto.name.trim();
+    if (!name) throw new BadRequestException('Informe um nome para o grupo');
+
+    const participantIds = dto.participantIds.filter((id) => id !== user.id);
+    if (participantIds.length < 2) {
+      throw new BadRequestException('Um grupo precisa de pelo menos duas outras pessoas');
+    }
+
+    const participants = await this.prisma.user.findMany({
+      where: {
+        id: { in: participantIds },
+        companyId: user.companyId,
+        active: true,
+      },
+      select: { id: true },
+    });
+    if (participants.length !== participantIds.length) {
+      throw new BadRequestException('Um ou mais participantes são inválidos');
+    }
+
+    const conversation = await this.prisma.conversation.create({
+      data: {
+        companyId: user.companyId,
+        type: 'GROUP',
+        name,
+        participants: {
+          create: [user.id, ...participantIds].map((userId) => ({ userId })),
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, jobTitle: true, active: true },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      id: conversation.id,
+      name: conversation.name,
+      type: conversation.type,
+      peer: null,
+      participants: conversation.participants.map((participant) => participant.user),
+      updatedAt: conversation.updatedAt,
+      lastMessage: null,
+      unread: false,
+    };
   }
 
   private async requireMembership(user: AuthUser, conversationId: string) {

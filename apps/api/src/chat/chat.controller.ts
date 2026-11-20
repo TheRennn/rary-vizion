@@ -2,7 +2,13 @@ import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common
 import { AuthUser } from '../common/auth-user';
 import { CurrentUser } from '../common/decorators';
 import { ChatService } from './chat.service';
-import { CreateConversationDto, ListMessagesQueryDto, SearchMessagesQueryDto, SendMessageDto } from './dto/chat.dto';
+import {
+  CreateConversationDto,
+  CreateGroupConversationDto,
+  ListMessagesQueryDto,
+  SearchMessagesQueryDto,
+  SendMessageDto,
+} from './dto/chat.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -21,6 +27,11 @@ export class ChatController {
   @Post('conversations')
   createConversation(@CurrentUser() user: AuthUser, @Body() dto: CreateConversationDto) {
     return this.chat.createConversation(user, dto.targetUserId);
+  }
+
+  @Post('conversations/groups')
+  createGroupConversation(@CurrentUser() user: AuthUser, @Body() dto: CreateGroupConversationDto) {
+    return this.chat.createGroupConversation(user, dto);
   }
 
   @Get('conversations/:id/messages')

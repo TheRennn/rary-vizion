@@ -18,6 +18,12 @@ function initials(name: string) {
   return name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
 }
 
+function conversationName(conversation: ChatConversation) {
+  return conversation.type === 'GROUP'
+    ? conversation.name ?? 'Grupo'
+    : conversation.peer?.name ?? 'Conversa';
+}
+
 function timeLabel(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 }
@@ -39,6 +45,11 @@ export default function ChatPage() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [groupSearch, setGroupSearch] = useState('');
+  const [groupParticipantIds, setGroupParticipantIds] = useState<string[]>([]);
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [search, setSearch] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
   const [messageResults, setMessageResults] = useState<ChatSearchResult[]>([]);
@@ -146,6 +157,7 @@ export default function ChatPage() {
   }, [messageSearch]);
 
   async function startConversation(targetUserId: string) {
+    setError(null);
     try {
       const conversation = await api<ChatConversation>('/chat/conversations', {
         method: 'POST',
@@ -157,6 +169,28 @@ export default function ChatPage() {
       await loadConversations();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao iniciar conversa');
+    }
+  }
+
+  async function createGroupConversation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setCreatingGroup(true);
+    try {
+      const conversation = await api<ChatConversation>('/chat/conversations/groups', {
+        method: 'POST',
+        body: { name: groupName, participantIds: groupParticipantIds },
+      });
+      setGroupOpen(false);
+      setGroupName('');
+      setGroupSearch('');
+      setGroupParticipantIds([]);
+      setSelectedId(conversation.id);
+      await loadConversations();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao criar grupo');
+    } finally {
+      setCreatingGroup(false);
     }
   }
 
@@ -190,10 +224,23 @@ export default function ChatPage() {
   if (!user) return null;
 
   const selected = conversations.find((conversation) => conversation.id === selectedId) ?? null;
+  const selectedDetails: Array<[string, string]> = selected
+    ? selected.type === 'GROUP'
+      ? [['Participantes', String(selected.participants.length)]]
+      : [
+          ['E-mail', selected.peer?.email ?? ''],
+          ['Cargo', selected.peer?.jobTitle ?? 'Não informado'],
+        ]
+    : [];
   const availablePeople = employees.filter((employee) =>
     employee.active &&
     employee.id !== user.id &&
     `${employee.name} ${employee.email}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  const availableGroupPeople = employees.filter((employee) =>
+    employee.active &&
+    employee.id !== user.id &&
+    `${employee.name} ${employee.email}`.toLowerCase().includes(groupSearch.toLowerCase()),
   );
 
   return (
@@ -205,15 +252,33 @@ export default function ChatPage() {
               <p className="eyebrow">Comunicação</p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight">Chat</h1>
             </div>
-            <button
-              type="button"
-              aria-label="Nova conversa"
-              className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-lg shadow-[0_8px_24px_rgba(139,92,246,.18)]"
-              onClick={() => setPeopleOpen((open) => !open)}
-            >
-              +
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Nova conversa"
+                title="Nova conversa"
+                className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-lg shadow-[0_8px_24px_rgba(139,92,246,.18)]"
+                onClick={() => {
+                  setGroupOpen(false);
+                  setPeopleOpen((open) => !open);
+                }}
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="btn-ghost px-2 text-xs"
+                onClick={() => {
+                  setPeopleOpen(false);
+                  setGroupOpen((open) => !open);
+                }}
+              >
+                Novo grupo
+              </button>
+            </div>
           </div>
+
+          {error && !selectedId && <p role="alert" className="mb-3 rounded-lg border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-300">{error}</p>}
 
           {peopleOpen && (
             <div className="mb-3 rounded-xl border border-line bg-bg p-2">
@@ -244,6 +309,57 @@ export default function ChatPage() {
                 {availablePeople.length === 0 && <p className="px-2 py-3 text-xs text-muted">Nenhuma pessoa encontrada.</p>}
               </div>
             </div>
+          )}
+
+          {groupOpen && (
+            <form onSubmit={createGroupConversation} className="mb-3 space-y-2 rounded-xl border border-line bg-bg p-3">
+              <label className="block space-y-1 text-xs font-medium">
+                Nome do grupo
+                <input
+                  value={groupName}
+                  onChange={(event) => setGroupName(event.target.value)}
+                  placeholder="Ex.: Projeto Aurora"
+                  maxLength={80}
+                  className="input"
+                  required
+                />
+              </label>
+              <label className="block space-y-1 text-xs font-medium">
+                Participantes
+                <input
+                  value={groupSearch}
+                  onChange={(event) => setGroupSearch(event.target.value)}
+                  placeholder="Buscar colaboradores..."
+                  className="input"
+                />
+              </label>
+              <div className="max-h-40 overflow-y-auto">
+                {availableGroupPeople.map((employee) => (
+                  <label key={employee.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm hover:bg-surface2">
+                    <input
+                      type="checkbox"
+                      checked={groupParticipantIds.includes(employee.id)}
+                      onChange={(event) => {
+                        setGroupParticipantIds((current) => event.target.checked
+                          ? [...current, employee.id]
+                          : current.filter((id) => id !== employee.id));
+                      }}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate">{employee.name}</span>
+                      <span className="block truncate text-xs text-muted">{employee.email}</span>
+                    </span>
+                  </label>
+                ))}
+                {availableGroupPeople.length === 0 && <p className="px-2 py-3 text-xs text-muted">Nenhum colaborador encontrado.</p>}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-muted">{groupParticipantIds.length} selecionado(s)</span>
+                <button type="submit" className="btn h-8 px-3 text-xs" disabled={creatingGroup || groupParticipantIds.length < 2}>
+                  {creatingGroup ? 'Criando…' : 'Criar grupo'}
+                </button>
+              </div>
+            </form>
           )}
 
           <label className="sr-only" htmlFor="chat-message-search">Pesquisar mensagens</label>
@@ -281,15 +397,17 @@ export default function ChatPage() {
               }`}
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface2 text-sm font-semibold text-primary">
-                {initials(conversation.peer?.name ?? 'Chat')}
+                {initials(conversationName(conversation))}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium">{conversation.peer?.name ?? 'Conversa'}</span>
+                  <span className="truncate text-sm font-medium">{conversationName(conversation)}</span>
                   {conversation.lastMessage && <span className="text-[10px] text-muted">{timeLabel(conversation.lastMessage.createdAt)}</span>}
                 </span>
                 <span className="mt-0.5 flex items-center justify-between gap-2">
-                  <span className="truncate text-xs text-muted">{conversation.lastMessage?.body ?? 'Comece uma conversa'}</span>
+                  <span className="truncate text-xs text-muted">{conversation.lastMessage
+                    ? `${conversation.type === 'GROUP' ? `${conversation.lastMessage.sender.name}: ` : ''}${conversation.lastMessage.body}`
+                    : conversation.type === 'GROUP' ? `${conversation.participants.length} participantes` : 'Comece uma conversa'}</span>
                   {conversation.unread && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                 </span>
               </span>
@@ -312,17 +430,25 @@ export default function ChatPage() {
                 ←
               </button>
               <span className="grid h-9 w-9 place-items-center rounded-full bg-surface2 text-xs font-semibold text-primary">
-                {initials(selected.peer?.name ?? 'Chat')}
+                {initials(conversationName(selected))}
               </span>
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-semibold">{selected.peer?.name ?? 'Conversa'}</h2>
-                <p className="truncate text-xs text-muted">{selected.peer?.jobTitle ?? selected.peer?.email}</p>
+                <h2 className="truncate text-sm font-semibold">{conversationName(selected)}</h2>
+                <p className="truncate text-xs text-muted">{selected.type === 'GROUP'
+                  ? `${selected.participants.length} participantes`
+                  : selected.peer?.jobTitle ?? selected.peer?.email}</p>
               </div>
               <button type="button" className="icon-button ml-auto" aria-label="Detalhes da conversa" title="Detalhes da conversa" onClick={() => openContextPanel({
-                title: selected.peer?.name ?? 'Conversa',
-                eyebrow: 'Chat direto',
-                description: selected.peer?.jobTitle ?? 'Informações de contato do colaborador.',
-                fields: [['E-mail', selected.peer?.email ?? ''], ['Cargo', selected.peer?.jobTitle ?? 'Não informado'], ['Mensagens carregadas', String(messages.length)], ['Não lidas', selected.unread ? 'Sim' : 'Não']],
+                title: conversationName(selected),
+                eyebrow: selected.type === 'GROUP' ? 'Grupo' : 'Chat direto',
+                description: selected.type === 'GROUP'
+                  ? selected.participants.map((participant) => participant.name).join(', ')
+                  : selected.peer?.jobTitle ?? 'Informações de contato do colaborador.',
+                fields: [
+                  ...selectedDetails,
+                  ['Mensagens carregadas', String(messages.length)],
+                  ['Não lidas', selected.unread ? 'Sim' : 'Não'],
+                ],
               })}>ⓘ</button>
             </header>
 
@@ -345,7 +471,7 @@ export default function ChatPage() {
                     <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                       {initials(selected.peer?.name ?? 'Chat')}
                     </span>
-                    <p className="mt-3 text-sm text-muted">Envie a primeira mensagem para {selected.peer?.name.split(' ')[0]}.</p>
+                    <p className="mt-3 text-sm text-muted">Envie a primeira mensagem para {conversationName(selected)}.</p>
                   </div>
                 </div>
               ) : (
@@ -395,7 +521,7 @@ export default function ChatPage() {
             <div>
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-xl font-semibold text-primary">C</div>
               <h2 className="mt-4 text-lg font-semibold">Selecione uma conversa</h2>
-              <p className="mt-1 max-w-sm text-sm text-muted">Escolha um colaborador para começar a conversar com sua equipe.</p>
+              <p className="mt-1 max-w-sm text-sm text-muted">Escolha uma conversa ou crie um grupo para começar.</p>
             </div>
           </div>
         )}

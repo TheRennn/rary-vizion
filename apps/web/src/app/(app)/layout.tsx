@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useAuth } from '@/components/auth-provider';
@@ -30,8 +31,19 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (loading || !user) {
+  if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-muted">Carregando…</div>;
+  }
+
+  if (!user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center p-6">
+        <div className="card space-y-3 text-center">
+          <p>Você precisa entrar para continuar.</p>
+          <Link className="btn inline-block" href="/login">Ir para o login</Link>
+        </div>
+      </main>
+    );
   }
 
   return (
