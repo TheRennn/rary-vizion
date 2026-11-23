@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuthUser } from '../common/auth-user';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseDataService } from '../supabase/supabase.service';
 import { statusFromLastEntry } from '../time/time.rules';
 import { DashboardPeriod } from './dashboard.dto';
 import { summarizeWork } from './dashboard.metrics';
@@ -26,11 +26,11 @@ function percentageChange(current: number, previous: number): number | null {
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: SupabaseDataService) {}
 
   async overview(user: AuthUser, period: DashboardPeriod, departmentId?: string) {
     if (departmentId) {
-      const department = await this.prisma.department.findFirst({
+      const department = await this.db.department.findFirst({
         where: { id: departmentId, companyId: user.companyId },
         select: { id: true },
       });
@@ -48,13 +48,12 @@ export class DashboardService {
 
     const departmentConstraint = departmentId ? { departmentId } : {};
     const selectedDepartmentConstraint = departmentId ? { id: departmentId } : {};
-    const timeEntryUserConstraint = departmentId
-      ? { user: { companyId: user.companyId, departmentId } }
-      : {};
+    const departmentUsers = departmentId ? await this.db.user.findMany({ where: { companyId: user.companyId, departmentId, active: true }, select: { id: true } }) : null;
+    const timeEntryUserConstraint = departmentUsers ? { userId: { in: departmentUsers.map((member: any) => member.id) } } : {};
 
-    const [employees, previousEntries, periodEntries, currentHires, previousHires, departments, logs] =
+    const [employees, previousEntries, periodEntries, currentHires, previousHires, departments, logs, projects, upcomingMeetings, upcomingMeetingsCount, unreadNotifications] =
       await Promise.all([
-        this.prisma.user.findMany({
+        this.db.user.findMany({
           where: { companyId: user.companyId, active: true, ...departmentConstraint },
           orderBy: { name: 'asc' },
           select: {
@@ -68,34 +67,45 @@ export class DashboardService {
             },
           },
         }),
-        this.prisma.timeEntry.findMany({
+        this.db.timeEntry.findMany({
           where: { companyId: user.companyId, recordedAt: { lt: previousFrom }, ...timeEntryUserConstraint },
           orderBy: [{ recordedAt: 'desc' }, { id: 'desc' }],
           distinct: ['userId'],
           select: { id: true, userId: true, type: true, recordedAt: true },
         }),
-        this.prisma.timeEntry.findMany({
+        this.db.timeEntry.findMany({
           where: { companyId: user.companyId, recordedAt: { gte: previousFrom, lte: now }, ...timeEntryUserConstraint },
           orderBy: [{ recordedAt: 'asc' }, { id: 'asc' }],
           select: { id: true, userId: true, type: true, recordedAt: true },
         }),
-        this.prisma.user.count({
+        this.db.user.count({
           where: { companyId: user.companyId, active: true, createdAt: { gte: from, lte: now }, ...departmentConstraint },
         }),
-        this.prisma.user.count({
+        this.db.user.count({
           where: { companyId: user.companyId, active: true, createdAt: { gte: previousFrom, lt: from }, ...departmentConstraint },
         }),
-        this.prisma.department.findMany({
+        this.db.department.findMany({
           where: { companyId: user.companyId, ...selectedDepartmentConstraint },
           orderBy: { name: 'asc' },
           select: { id: true, name: true },
         }),
-        this.prisma.auditLog.findMany({
+        this.db.auditLog.findMany({
           where: { companyId: user.companyId, action: { not: 'auth.login' } },
           orderBy: { createdAt: 'desc' },
           take: 8,
           select: { id: true, actorId: true, action: true, createdAt: true },
         }),
+        this.db.project.findMany({
+          where: { companyId: user.companyId },
+          select: { id: true, name: true, status: true, dueAt: true, tasks: { select: { status: true, priority: true, dueAt: true } } },
+        }),
+        this.db.meeting.findMany({
+          where: { companyId: user.companyId, startsAt: { gte: now } },
+          orderBy: { startsAt: 'asc' },
+          select: { id: true, name: true, startsAt: true, durationMinutes: true, code: true, accessMode: true, createdById: true, participants: { select: { userId: true } } },
+        }),
+        Promise.resolve(0),
+        this.db.notification.count({ where: { companyId: user.companyId, userId: user.id, readAt: null } }),
       ]);
 
     const work = summarizeWork(
@@ -138,7 +148,7 @@ export class DashboardService {
 
     const actorIds = [...new Set(logs.flatMap((log) => (log.actorId ? [log.actorId] : [])))];
     const actors = actorIds.length
-      ? await this.prisma.user.findMany({
+      ? await this.db.user.findMany({
           where: { companyId: user.companyId, id: { in: actorIds } },
           select: { id: true, name: true },
         })
@@ -174,10 +184,22 @@ export class DashboardService {
         actorName: log.actorId ? actorNames.get(log.actorId) ?? null : null,
         createdAt: log.createdAt.toISOString(),
       })),
+      projects: {
+        active: projects.filter((project) => project.status === 'ACTIVE').length,
+        total: projects.length,
+        byStatus: projects.reduce<Record<string, number>>((counts, project) => { counts[project.status] = (counts[project.status] ?? 0) + 1; return counts; }, {}),
+        pendingTasks: projects.reduce((total, project) => total + project.tasks.filter((task: any) => task.status !== 'DONE').length, 0),
+        overdueTasks: projects.reduce((total, project) => total + project.tasks.filter((task: any) => task.status !== 'DONE' && task.dueAt && task.dueAt < now).length, 0),
+        tasksByStatus: projects.flatMap((project) => project.tasks).reduce<Record<string, number>>((counts, task) => { counts[task.status] = (counts[task.status] ?? 0) + 1; return counts; }, {}),
+        tasksByPriority: projects.flatMap((project) => project.tasks).filter((task: any) => task.status !== 'DONE').reduce<Record<string, number>>((counts, task) => { counts[task.priority] = (counts[task.priority] ?? 0) + 1; return counts; }, {}),
+      },
+      upcomingMeetings: upcomingMeetings.filter((meeting: any) => meeting.accessMode !== 'PRIVATE' || meeting.createdById === user.id || meeting.participants.some((participant: any) => participant.userId === user.id)).slice(0, 5),
+      upcomingMeetingsCount: upcomingMeetings.filter((meeting: any) => meeting.accessMode !== 'PRIVATE' || meeting.createdById === user.id || meeting.participants.some((participant: any) => participant.userId === user.id)).length,
+      unreadNotifications,
       availability: {
-        projects: false,
-        tasks: false,
-        meetings: false,
+        projects: true,
+        tasks: true,
+        meetings: true,
         intelligence: false,
       },
     };

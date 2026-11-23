@@ -4,14 +4,18 @@ Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” si
 
 > O briefing recebido para o Sprint 04 atual é uma remodelação global da interface. Seu estado, componentes e validação estão documentados no README. Os itens numerados como Sprint 04–16 abaixo vieram do roadmap funcional anterior e permanecem como backlog de domínio; eles não representam o Sprint 04 visual.
 
+> **Atualização em 20/11/2026:** os briefings entregues para Sprints 08–12 e seus relatórios individuais são a fonte atual para infraestrutura e experiência visual. Alguns números e estados do backlog histórico abaixo antecedem migrations PostgreSQL, autenticação, Projects/Meetings/Inbox e `/workspace`; revalidar cada item contra o código antes de iniciar. Sprint 12: implementado parcialmente, sem cutover ou publicação. Próximo recomendado: Sprint 13 — Vizion Time 2.0.
+
+> **Atualização em 21/11/2026:** a infraestrutura PostgreSQL/Prisma descrita nos registros históricos foi removida do runtime. Supabase Auth e Supabase PostgREST são a única persistência suportada. Use o README e `supabase/migrations` para a arquitetura atual.
+
 ## Sprint 02 — Backend e Arquitetura
 
 - **Objetivo:** estabilizar contratos, persistência e limites de segurança antes da expansão funcional.
-- **Escopo:** API NestJS, Prisma/SQLite, configuração Supabase, autenticação, serviços comuns.
+- **Escopo:** API NestJS, Supabase Auth/PostgREST, autenticação e serviços comuns.
 - **Páginas:** login/registro, todas as páginas autenticadas (impacto indireto).
 - **Funcionalidades:** persistência previsível entre ambientes; mensagens de erro consistentes; validação de entrada; autorização e isolamento por tenant.
 - **Tarefas técnicas:**
-  - [ ] Documentar modo de persistência suportado por ambiente e alinhar migrações com Prisma.
+  - [x] Documentar Supabase como persistência única e versionar o schema dos módulos.
   - [ ] Revisar guards, identidade autenticada, papéis e cobertura de cada controller.
   - [ ] Auditar toda query de negócio para escopo `companyId` e testar tentativas cross-tenant.
   - [x] Definir envelope de erro consistente e logging com request ID; validar política global de DTO.
@@ -20,7 +24,7 @@ Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” si
   - [ ] Documentar variáveis de ambiente e remover divergências entre setup e runtime.
 - **Dependências:** nenhuma; precede os módulos que precisam de novos contratos.
 - **Critérios de conclusão:** [ ] arquitetura e fluxos documentados; [ ] autorização/tenant verificados; [ ] migração/persistência reproduzível; [x] falhas retornam envelope estável e ID correlacionável; [ ] fluxos de login e sessão validados.
-- **Prioridade:** Crítica. **Status:** Parcial (envelope de erros/IDs de requisição, status 401/403, login/cadastro local com senha bcrypt e token local revalidado, validação de ambiente reforçada; persistência Supabase/Prisma, revisão completa de tenants e sessão httpOnly seguem pendentes).
+- **Prioridade:** Crítica. **Status:** Parcial (envelope de erros/IDs de requisição, status 401/403, Supabase Auth e cookies HttpOnly implementados; revisar isolamento cross-tenant e fluxos de sessão).
 
 ## Sprint 03 — Workforce e Time
 
@@ -167,8 +171,8 @@ Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” si
 
 - **Diagnóstico:** diretório agora permite cadastro, edição, arquivamento/reativação e filtros locais, com trilha de auditoria básica. Ainda não há paginação no servidor, histórico profissional consultável, hierarquia persistida, solicitações nem aprovações de jornada.
 - **Objetivo e prioridade:** completar as operações prioritárias de pessoas e jornada com trilha de auditoria. **Prioridade:** Alta.
-- **Escopo e dependências:** API, Prisma, páginas `/workforce` e `/time`; depende da conclusão das pendências críticas de segurança do Sprint 02.
-- **Backend/banco:** migrar filtros para query paginada por empresa; API de histórico de alterações a partir da auditoria; modelo de solicitação de ajuste/aprovação sem editar registros de ponto existentes; validar índices e compatibilidade SQLite.
+- **Escopo e dependências:** API Supabase, páginas `/workforce` e `/time`; depende da conclusão das pendências críticas de segurança do Sprint 02.
+- **Backend/banco:** migrar filtros para query paginada por empresa; API de histórico de alterações a partir da auditoria; modelo de solicitação de ajuste/aprovação sem editar registros de ponto existentes; validar índices no Supabase.
 - **Frontend:** perfil lateral com atividade auditada, filtros server-side, paginação, estado de arquivado; página/painel de aprovações e histórico com origem, estado e autor da decisão.
 - **Integrações:** Workforce com Time por usuário/departamento; resumo de jornada no perfil somente se permitido pelo papel.
 - **Validação/risco:** testes de autorização por papel e tenant, transições de aprovação, filtros/paginação e concorrência; risco de regras trabalhistas/configuração por empresa requer decisão de produto e revisão apropriada.
@@ -191,7 +195,7 @@ Este roadmap parte da auditoria do repositório em 19/11/2026. “Pendente” si
 
 - **Diagnóstico:** não há entidades, API ou interface funcional de projetos/tarefas; dashboard mostra indisponibilidade explicitamente.
 - **Objetivo e prioridade:** entregar projetos, tarefas e quadro Kanban persistidos, formando a fonte confiável de progresso. **Prioridade:** Alta.
-- **Escopo e dependências:** novo módulo NestJS/Prisma, página `/projects`, diretório de usuários; depende de contratos/isolamento do Sprint 02 e Workforce do Sprint 12.
+- **Escopo e dependências:** módulo NestJS com persistência Supabase, página `/projects`, diretório de usuários; depende de contratos/isolamento do Sprint 02 e Workforce do Sprint 12.
 - **Backend/banco:** modelos de projeto/tarefa, estados permitidos, responsável, prazo, prioridade, comentário e eventos de alteração; filtros por empresa e validação de transições.
 - **Frontend:** lista e quadro Kanban acessível, criação/edição em painel, filtros, confirmação para ações destrutivas, estados vazios/carregando/erro e layout adaptável; arrastar e soltar só após garantir persistência e reversão em erro.
 - **Integrações:** destinatários e notificações serão ligados no Sprint 15; métricas reais alimentam Dashboard/Reports depois do modelo estabilizado.

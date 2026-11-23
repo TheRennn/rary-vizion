@@ -1,0 +1,52 @@
+name: rary-vizion
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: "3333"
+      SUPABASE_URL: ${SUPABASE_URL:?Set the Supabase project URL}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:?Set the Supabase publishable key}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:?Set the Supabase secret key}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set the HTTPS frontend origin}
+      RATE_LIMIT_REDIS_URL: ${RATE_LIMIT_REDIS_URL:?Set a TLS Redis URL}
+      RATE_LIMIT_REDIS_TOKEN: ${RATE_LIMIT_REDIS_TOKEN:-}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+    expose: ["3333"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3333/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks: [application]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runtime
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set the browser reachable HTTPS API URL}
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    expose: ["3000"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks: [application]
+
+networks:
+  application:
+    driver: bridge

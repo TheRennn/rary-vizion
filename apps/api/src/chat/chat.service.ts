@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AuthUser } from '../common/auth-user';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseDataService } from '../supabase/supabase.service';
 import {
   CreateGroupConversationDto,
   ListMessagesQueryDto,
@@ -14,20 +14,14 @@ import {
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly db: SupabaseDataService) {}
 
   async searchMessages(user: AuthUser, query: SearchMessagesQueryDto) {
     const term = query.q.trim();
     if (term.length < 2) throw new BadRequestException('Digite ao menos dois caracteres para pesquisar');
 
-    const results = await this.prisma.chatMessage.findMany({
-      where: {
-        body: { contains: term },
-        conversation: {
-          companyId: user.companyId,
-          participants: { some: { userId: user.id } },
-        },
-      },
+    const results = await this.db.chatMessage.findMany({
+      where: { body: { contains: term } },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: query.limit ?? 20,
       include: {
@@ -36,28 +30,26 @@ export class ChatService {
           select: {
             id: true,
             name: true,
-            participants: {
-              where: { userId: { not: user.id } },
-              take: 1,
-              select: { user: { select: { id: true, name: true } } },
-            },
+            companyId: true,
+            participants: { include: { user: { select: { id: true, name: true } } } },
           },
         },
       },
     });
 
-    return results.map(({ conversation, ...message }) => ({
+    return results.filter((message: any) => message.conversation.companyId === user.companyId && message.conversation.participants.some((participant: any) => participant.userId === user.id))
+      .slice(0, query.limit ?? 20).map(({ conversation, ...message }: any) => ({
       ...message,
       conversation: {
         id: conversation.id,
         name: conversation.name,
-        peerName: conversation.name ?? conversation.participants[0]?.user.name ?? 'Conversa',
+        peerName: conversation.name ?? conversation.participants.find((participant: any) => participant.userId !== user.id)?.user?.name ?? 'Conversa',
       },
     }));
   }
 
   async listConversations(user: AuthUser) {
-    const memberships = await this.prisma.conversationParticipant.findMany({
+    const memberships = await this.db.conversationParticipant.findMany({
       where: { userId: user.id, conversation: { companyId: user.companyId } },
       orderBy: { conversation: { updatedAt: 'desc' } },
       include: {
@@ -76,15 +68,15 @@ export class ChatService {
       },
     });
 
-    return memberships.map(({ conversation, lastReadAt }) => {
-      const peer = conversation.participants.find((participant) => participant.userId !== user.id)?.user ?? null;
+    return memberships.filter(({ conversation }: any) => conversation.companyId === user.companyId).map(({ conversation, lastReadAt }: any) => {
+      const peer = conversation.participants.find((participant: any) => participant.userId !== user.id)?.user ?? null;
       const lastMessage = conversation.messages[0] ?? null;
       return {
         id: conversation.id,
         name: conversation.name,
         type: conversation.type,
         peer: conversation.type === 'DIRECT' ? peer : null,
-        participants: conversation.participants.map((participant) => participant.user),
+        participants: conversation.participants.map((participant: any) => participant.user),
         updatedAt: conversation.updatedAt,
         lastMessage,
         unread: !!lastMessage &&
@@ -97,42 +89,36 @@ export class ChatService {
   async createConversation(user: AuthUser, targetUserId: string) {
     if (targetUserId === user.id) throw new BadRequestException('Não é possível iniciar uma conversa consigo mesmo');
 
-    const target = await this.prisma.user.findFirst({
+    const target = await this.db.user.findFirst({
       where: { id: targetUserId, companyId: user.companyId, active: true },
       select: { id: true, name: true, email: true, jobTitle: true, active: true },
     });
     if (!target) throw new NotFoundException('Colaborador não encontrado');
 
-    const existing = await this.prisma.conversation.findFirst({
-      where: {
-        companyId: user.companyId,
-        type: 'DIRECT',
-        AND: [
-          { participants: { some: { userId: user.id } } },
-          { participants: { some: { userId: targetUserId } } },
-        ],
-      },
+    const existingRows = await this.db.conversation.findMany({
+      where: { companyId: user.companyId, type: 'DIRECT' },
       include: {
         participants: { include: { user: { select: { id: true, name: true, email: true, jobTitle: true, active: true } } } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1, include: { sender: { select: { id: true, name: true } } } },
       },
     });
+    const existing = existingRows.find((conversation: any) => conversation.participants.some((participant: any) => participant.userId === user.id) && conversation.participants.some((participant: any) => participant.userId === targetUserId));
 
     if (existing) {
-      const peer = existing.participants.find((participant) => participant.userId !== user.id)?.user ?? target;
+      const peer = existing.participants.find((participant: any) => participant.userId !== user.id)?.user ?? target;
       return {
         id: existing.id,
         name: existing.name,
         type: existing.type,
         peer,
-        participants: existing.participants.map((participant) => participant.user),
+        participants: existing.participants.map((participant: any) => participant.user),
         updatedAt: existing.updatedAt,
         lastMessage: existing.messages[0] ?? null,
         unread: false,
       };
     }
 
-    const conversation = await this.prisma.conversation.create({
+    const conversation = await this.db.conversation.create({
       data: {
         companyId: user.companyId,
         type: 'DIRECT',
@@ -148,7 +134,7 @@ export class ChatService {
       name: null,
       type: conversation.type,
       peer: target,
-      participants: conversation.participants.map((participant) => participant.user),
+      participants: conversation.participants.map((participant: any) => participant.user),
       updatedAt: conversation.updatedAt,
       lastMessage: null,
       unread: false,
@@ -164,7 +150,7 @@ export class ChatService {
       throw new BadRequestException('Um grupo precisa de pelo menos duas outras pessoas');
     }
 
-    const participants = await this.prisma.user.findMany({
+    const participants = await this.db.user.findMany({
       where: {
         id: { in: participantIds },
         companyId: user.companyId,
@@ -176,7 +162,7 @@ export class ChatService {
       throw new BadRequestException('Um ou mais participantes são inválidos');
     }
 
-    const conversation = await this.prisma.conversation.create({
+    const conversation = await this.db.conversation.create({
       data: {
         companyId: user.companyId,
         type: 'GROUP',
@@ -201,7 +187,7 @@ export class ChatService {
       name: conversation.name,
       type: conversation.type,
       peer: null,
-      participants: conversation.participants.map((participant) => participant.user),
+      participants: conversation.participants.map((participant: any) => participant.user),
       updatedAt: conversation.updatedAt,
       lastMessage: null,
       unread: false,
@@ -209,7 +195,7 @@ export class ChatService {
   }
 
   private async requireMembership(user: AuthUser, conversationId: string) {
-    const membership = await this.prisma.conversationParticipant.findFirst({
+    const membership = await this.db.conversationParticipant.findFirst({
       where: {
         conversationId,
         userId: user.id,
@@ -227,14 +213,14 @@ export class ChatService {
     await this.requireMembership(user, conversationId);
     const limit = query.limit ?? 50;
     if (query.before) {
-      const cursor = await this.prisma.chatMessage.findFirst({
+      const cursor = await this.db.chatMessage.findFirst({
         where: { id: query.before, conversationId },
         select: { id: true },
       });
       if (!cursor) throw new BadRequestException('Cursor de mensagem inválido');
     }
 
-    const page = await this.prisma.chatMessage.findMany({
+    const page = await this.db.chatMessage.findMany({
       where: { conversationId },
       ...(query.before ? { cursor: { id: query.before }, skip: 1 } : {}),
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -251,7 +237,7 @@ export class ChatService {
 
   async sendMessage(user: AuthUser, conversationId: string, body: string) {
     await this.requireMembership(user, conversationId);
-    return this.prisma.$transaction(async (tx) => {
+    return this.db.$transaction(async (tx) => {
       const created = await tx.chatMessage.create({
         data: { conversationId, senderId: user.id, body: body.trim() },
         include: { sender: { select: { id: true, name: true } } },
@@ -266,7 +252,7 @@ export class ChatService {
 
   async markRead(user: AuthUser, conversationId: string) {
     await this.requireMembership(user, conversationId);
-    return this.prisma.conversationParticipant.update({
+    return this.db.conversationParticipant.update({
       where: { conversationId_userId: { conversationId, userId: user.id } },
       data: { lastReadAt: new Date() },
       select: { lastReadAt: true },

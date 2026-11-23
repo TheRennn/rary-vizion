@@ -1,184 +1,106 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '../common/domain-types';
-import { randomBytes } from 'crypto';
-import { compare, hash } from 'bcryptjs';
-import { Prisma } from '@prisma/client';
 import { AuthUser } from '../common/auth-user';
+import { Role } from '../common/domain-types';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { SupabaseService } from '../supabase/supabase.service';
-import { createDemoToken, demoUser, getDemoAccount, isDemoLogin } from './demo-auth';
-import { PrismaService } from '../prisma/prisma.service';
-import { createLocalToken } from './local-auth';
-
-function slugify(name: string): string {
-  const base = name
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40);
-  return `${base || 'company'}-${randomBytes(2).toString('hex')}`;
-}
+import { SupabaseDataService } from '../supabase/supabase.service';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly supabase: SupabaseService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly config: ConfigService, private readonly supabase: SupabaseDataService) {}
 
-  async register(dto: RegisterDto): Promise<{ accessToken: string }> {
-    if (!this.supabase.isConfigured) {
-      if (this.config.get<string>('NODE_ENV') === 'production') {
-        throw new ServiceUnavailableException('Cadastro indisponível: configure o provedor de autenticação');
-      }
-      const existing = await this.prisma.user.findUnique({ where: { email: dto.email }, select: { id: true } });
-      if (existing) throw new ConflictException('E-mail já cadastrado');
-      const secret = this.config.getOrThrow<string>('JWT_SECRET');
-      const passwordHash = await hash(dto.password, 12);
-      let user: { id: string };
-      try {
-        user = await this.prisma.$transaction(async (tx) => {
-          const company = await tx.company.create({
-            data: { name: dto.companyName.trim(), slug: slugify(dto.companyName) },
-            select: { id: true },
-          });
-          const owner = await tx.user.create({
-            data: {
-              companyId: company.id,
-              name: dto.name.trim(),
-              email: dto.email,
-              passwordHash,
-              role: Role.OWNER,
-            },
-            select: { id: true },
-          });
-          await tx.auditLog.create({
-            data: { companyId: company.id, actorId: owner.id, action: 'company.registered', entity: 'Company', entityId: company.id },
-          });
-          return owner;
-        });
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-          throw new ConflictException('E-mail já cadastrado');
-        }
-        throw error;
-      }
-      return { accessToken: createLocalToken(user.id, secret) };
+  private async sessionFrom(result: any) {
+    if (result.error || !result.data?.session || !result.data.user) {
+      throw new UnauthorizedException(result.error?.message ?? 'O Supabase não criou uma sessão. Verifique a confirmação de e-mail no painel.');
     }
-
-    const { data, error } = await this.supabase.publicClient.auth.signUp({
-      email: dto.email,
-      password: dto.password,
-      options: { data: { name: dto.name, companyName: dto.companyName } },
-    });
-    if (error) {
-      if (error.status === 400 || error.code === 'user_already_exists') throw new ConflictException('E-mail já cadastrado');
-      throw new BadRequestException(error.message);
-    }
-    if (!data.user || !data.session) throw new BadRequestException('Confirme o e-mail antes de entrar');
-
-    // The database trigger creates the company and owner profile from the
-    // signup metadata. Read that row instead of inserting a second company.
-    const profile = await this.supabase.adminClient
-      .from('users')
-      .select('id,company_id')
-      .eq('id', data.user.id)
-      .single();
-    if (profile.error || !profile.data) {
-      throw new BadRequestException(profile.error?.message ?? 'Perfil empresarial não foi criado');
-    }
-
-    return { accessToken: data.session.access_token };
+    const expiresAt = new Date((result.data.session.expires_at ?? Math.floor(Date.now() / 1000) + 3600) * 1000);
+    return { token: result.data.session.access_token as string, refreshToken: result.data.session.refresh_token as string, expiresAt };
   }
 
-  async login(dto: LoginDto): Promise<{ accessToken: string }> {
-    if (isDemoLogin(dto.email, dto.password)) {
-      if (this.config.get<string>('NODE_ENV') === 'production') {
-        throw new UnauthorizedException('Contas de demonstração não estão disponíveis em produção');
-      }
-      if (!this.supabase.isConfigured) {
-        const seededAccount = await this.prisma.user.findUnique({ where: { email: dto.email } });
-        if (seededAccount) {
-          if (!seededAccount.active || !(await compare(dto.password, seededAccount.passwordHash))) {
-            throw new UnauthorizedException('Credenciais inválidas');
-          }
-          return { accessToken: createLocalToken(seededAccount.id, this.config.getOrThrow<string>('JWT_SECRET')) };
-        }
-      }
-      const secret = this.config.getOrThrow<string>('JWT_SECRET');
-      return { accessToken: createDemoToken(dto.email, secret) };
-    }
-    if (!this.supabase.isConfigured) {
-      if (this.config.get<string>('NODE_ENV') === 'production') {
-        throw new ServiceUnavailableException('Autenticação indisponível: configure o provedor de autenticação');
-      }
-      const account = await this.prisma.user.findUnique({ where: { email: dto.email } });
-      if (!account || !account.active || !(await compare(dto.password, account.passwordHash))) {
-        throw new UnauthorizedException('Credenciais inválidas');
-      }
-      return { accessToken: createLocalToken(account.id, this.config.getOrThrow<string>('JWT_SECRET')) };
-    }
-    const { data, error } = await this.supabase.publicClient.auth.signInWithPassword({
+  async register(dto: RegisterDto) {
+    const result = await this.supabase.publicClient.auth.signUp({
       email: dto.email,
       password: dto.password,
+      options: { data: { name: dto.name.trim(), companyName: dto.companyName.trim() } },
     });
-    if (error || !data.session) throw new UnauthorizedException('Credenciais inválidas');
-
-    const { data: profile, error: profileError } = await this.supabase.adminClient
-      .from('users')
-      .select('id,active')
-      .eq('id', data.user.id)
-      .single();
-    if (profileError || !profile || !profile.active) throw new UnauthorizedException('Credenciais inválidas');
-    return { accessToken: data.session.access_token };
+    if (result.error) throw new UnauthorizedException(result.error.message);
+    if (result.data.user?.identities?.length === 0) throw new ConflictException('E-mail já cadastrado');
+    if (!result.data.session) throw new ServiceUnavailableException('Confirme seu e-mail para concluir o cadastro. A sessão será criada após a confirmação.');
+    return this.sessionFrom(result);
   }
 
-  /**
-   * Atalho SOMENTE para desenvolvimento: entra como o owner da empresa demo.
-   * Pode ser desativado com DEV_AUTO_LOGIN=false e é bloqueado em NODE_ENV=production.
-   */
-  async devLogin(): Promise<{ accessToken: string }> {
-    const enabled = this.config.get<string>('DEV_AUTO_LOGIN') !== 'false';
-    if (!enabled || this.config.get<string>('NODE_ENV') === 'production') throw new NotFoundException();
-    const secret = this.config.getOrThrow<string>('JWT_SECRET');
-    return { accessToken: createDemoToken('owner@demo.com', secret) };
+  async login(dto: LoginDto) {
+    return this.sessionFrom(await this.supabase.publicClient.auth.signInWithPassword({ email: dto.email, password: dto.password }));
+  }
+
+  async devLogin() {
+    if (
+      this.config.get<string>('DEV_AUTO_LOGIN') === 'false'
+      || this.config.get<string>('NODE_ENV') === 'production'
+      || (!this.supabase.development && !this.supabase.local)
+    ) throw new NotFoundException();
+    const email = 'owner@demo.com';
+    const password = this.config.get<string>('DEV_DEMO_PASSWORD') ?? 'Demo@12345';
+    const listed = await this.supabase.adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (listed.error) throw new ServiceUnavailableException('Não foi possível consultar os usuários de desenvolvimento no Supabase');
+    const existing = listed.data.users.find((user) => user.email?.toLowerCase() === email);
+    let userId: string;
+    if (existing) {
+      userId = existing.id;
+      const updated = await this.supabase.adminClient.auth.admin.updateUserById(userId, { password, email_confirm: true });
+      if (updated.error) throw new ServiceUnavailableException(`Não foi possível preparar o usuário demo no Supabase: ${updated.error.message}`);
+    } else {
+      const created = await this.supabase.adminClient.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { name: 'Owner Demo', companyName: 'RARY Demo' } });
+      if (created.error && created.error.code !== 'email_exists') throw new ServiceUnavailableException(`Não foi possível criar o usuário demo no Supabase: ${created.error.message}`);
+      if (created.error) throw new ServiceUnavailableException('O usuário demo foi criado em paralelo; tente novamente.');
+      userId = created.data.user.id;
+    }
+
+    const { data: profile, error: profileError } = await this.supabase.adminClient.from('users')
+      .update({ role: 'OWNER', active: true })
+      .eq('id', userId)
+      .select('id')
+      .maybeSingle();
+    if (profileError) throw new ServiceUnavailableException(`Não foi possível preparar o perfil demo: ${profileError.message}`);
+    if (!profile) throw new ServiceUnavailableException('O perfil demo não existe. Aplique as migrations do Supabase antes de entrar.');
+    return this.sessionFrom(await this.supabase.publicClient.auth.signInWithPassword({ email, password }));
+  }
+
+  async authenticate(token: string): Promise<AuthUser> {
+    const { data, error } = await this.supabase.publicClient.auth.getUser(token);
+    if (error || !data.user) throw new UnauthorizedException('Sessão Supabase inválida ou expirada');
+    let tokenIssuedAt = 0;
+    try { tokenIssuedAt = Number(JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')).iat); } catch { throw new UnauthorizedException('Token Supabase inválido'); }
+    const { data: profile, error: profileError } = await this.supabase.adminClient.from('users')
+      .select('id,company_id,name,email,role,active').eq('id', data.user.id).maybeSingle();
+    if (profileError || !profile || !profile.active) throw new UnauthorizedException('Perfil inexistente ou inativo no Supabase');
+    const validAfter = Date.parse(String(data.user.app_metadata?.authValidAfter ?? ''));
+    if (Number.isFinite(validAfter) && tokenIssuedAt <= Math.floor(validAfter / 1000)) throw new UnauthorizedException('Sessão revogada');
+    return { id: profile.id, companyId: profile.company_id, role: profile.role as Role, name: profile.name, email: profile.email, sessionId: token };
+  }
+
+  async logout(accessToken: string) {
+    const { error } = await this.supabase.adminClient.auth.admin.signOut(accessToken, 'local');
+    if (error) throw new UnauthorizedException('Não foi possível encerrar a sessão Supabase');
+    return { success: true };
+  }
+
+  async refresh(refreshToken: string) {
+    const result = await this.supabase.publicClient.auth.refreshSession({ refresh_token: refreshToken });
+    return this.sessionFrom(result);
+  }
+
+  async listSessions(_userId: string) { return []; }
+  async revokeSession(_userId: string, _sessionId: string) { throw new NotFoundException('Sessão individual não é gerenciada pela aplicação'); }
+  async revokeAllSessions(accessToken: string) {
+    const { error } = await this.supabase.adminClient.auth.admin.signOut(accessToken, 'global');
+    if (error) throw new UnauthorizedException('Não foi possível encerrar as sessões no Supabase');
+    return { revoked: 1 };
   }
 
   async me(authUser: AuthUser) {
-    const demoAccount = getDemoAccount(authUser.email);
-
-    if (!this.supabase.isConfigured) {
-      const account = await this.prisma.user.findUnique({
-        where: { id: authUser.id },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          jobTitle: true,
-          company: { select: { id: true, name: true } },
-          department: { select: { id: true, name: true } },
-        },
-      });
-      if (!account) {
-        if (demoAccount) return demoUser(demoAccount);
-        throw new NotFoundException('Usuário não encontrado');
-      }
-      return account;
-    }
-
-    if (demoAccount) return demoUser(demoAccount);
-
-    const { data, error } = await this.supabase.adminClient
-      .from('users')
-      .select('id,name,email,role,job_title,company:companies(id,name),department:departments(id,name)')
-      .eq('id', authUser.id)
-      .single();
-    if (error || !data) throw new NotFoundException('Usuário não encontrado');
-    return data;
+    const { data, error } = await this.supabase.adminClient.from('users').select('id,name,email,role,job_title,company:companies(id,name),department:departments(id,name)').eq('id', authUser.id).maybeSingle();
+    if (error || !data) throw new NotFoundException('Usuário não encontrado no Supabase');
+    return { id: data.id, name: data.name, email: data.email, role: data.role, jobTitle: data.job_title, company: data.company, department: data.department };
   }
 }

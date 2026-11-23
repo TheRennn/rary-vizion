@@ -142,6 +142,18 @@ export interface DashboardOverview {
     actorName: string | null;
     createdAt: string;
   }>;
+  projects: {
+    active: number;
+    total: number;
+    byStatus: Record<string, number>;
+    pendingTasks: number;
+    overdueTasks: number;
+    tasksByStatus: Record<string, number>;
+    tasksByPriority: Record<string, number>;
+  };
+  upcomingMeetings: Array<{ id: string; name: string; startsAt: string; durationMinutes: number; code: string }>;
+  upcomingMeetingsCount: number;
+  unreadNotifications: number;
   availability: {
     projects: boolean;
     tasks: boolean;

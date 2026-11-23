@@ -231,6 +231,30 @@ function DepartmentOverview({ overview }: { overview: DashboardOverview }) {
   );
 }
 
+const PROJECT_STATUS_LABEL: Record<string, string> = { PLANNING: 'Planejamento', ACTIVE: 'Em andamento', ON_HOLD: 'Pausado', COMPLETED: 'Concluído', ARCHIVED: 'Arquivado' };
+const TASK_STATUS_LABEL: Record<string, string> = { TODO: 'A fazer', IN_PROGRESS: 'Em andamento', REVIEW: 'Em revisão', DONE: 'Concluída' };
+const PRIORITY_LABEL: Record<string, string> = { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta', URGENT: 'Urgente' };
+
+function OperationsBreakdown({ overview }: { overview: DashboardOverview }) {
+  const projectStatuses = Object.entries(overview.projects.byStatus);
+  const taskStatuses = Object.entries(overview.projects.tasksByStatus);
+  const maxProjects = Math.max(overview.projects.total, 1);
+  const maxTasks = Math.max(...Object.values(overview.projects.tasksByStatus), 1);
+  const priorities = Object.entries(overview.projects.tasksByPriority).sort((a, b) => (b[1] - a[1]));
+  const maxPriority = Math.max(...priorities.map(([, count]) => count), 1);
+  return <div className="grid gap-6 lg:grid-cols-2">
+    <div>
+      <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-medium">Projetos por status</h3><a href="/projects" className="text-xs text-primary">Abrir projetos</a></div>
+      {projectStatuses.length ? <ul className="space-y-3">{projectStatuses.map(([status, value]) => <li key={status}><div className="mb-1 flex justify-between text-xs"><span className="text-muted">{PROJECT_STATUS_LABEL[status] ?? status}</span><span className="tabular-nums">{value}</span></div><div className="h-1.5 rounded-full bg-white/[.06]"><div className="h-full rounded-full bg-primary" style={{ width: `${(value / maxProjects) * 100}%` }} /></div></li>)}</ul> : <p className="text-xs text-muted">Nenhum projeto cadastrado.</p>}
+    </div>
+    <div>
+      <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-medium">Tarefas por andamento</h3><span className="text-xs text-muted">{overview.projects.overdueTasks} atrasadas</span></div>
+      {taskStatuses.length ? <ul className="space-y-3">{taskStatuses.map(([status, value]) => <li key={status}><div className="mb-1 flex justify-between text-xs"><span className="text-muted">{TASK_STATUS_LABEL[status] ?? status}</span><span className="tabular-nums">{value}</span></div><div className="h-1.5 rounded-full bg-white/[.06]"><div className="h-full rounded-full bg-secondary" style={{ width: `${(value / maxTasks) * 100}%` }} /></div></li>)}</ul> : <p className="text-xs text-muted">Nenhuma tarefa cadastrada.</p>}
+      {priorities.length > 0 && <div className="mt-4 border-t border-line/60 pt-3"><p className="mb-2 text-[10px] text-muted">Pendências por prioridade</p><ul className="space-y-2">{priorities.map(([priority, count]) => <li key={priority}><div className="mb-1 flex justify-between text-[10px]"><span className="text-muted">{PRIORITY_LABEL[priority] ?? priority}</span><span>{count}</span></div><div className="h-1 rounded-full bg-white/[.06]"><div className={`h-full rounded-full ${priority === 'URGENT' || priority === 'HIGH' ? 'bg-rose-400' : priority === 'MEDIUM' ? 'bg-amber-300' : 'bg-slate-400'}`} style={{ width: `${(count / maxPriority) * 100}%` }} /></div></li>)}</ul></div>}
+    </div>
+  </div>;
+}
+
 function FeatureUnavailable({ title, description }: { title: string; description: string }) {
   return (
     <section className="card p-5">
@@ -346,14 +370,14 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
       )}
 
       {loading && !overview ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Carregando indicadores">
-          {Array.from({ length: 4 }, (_, index) => (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5" aria-label="Carregando indicadores">
+          {Array.from({ length: 10 }, (_, index) => (
             <div key={index} className="metric-card h-32 animate-pulse bg-surface2/50" />
           ))}
         </div>
       ) : overview ? (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores executivos">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5" aria-label="Indicadores executivos">
             <MetricCard
               href="/workforce"
               label="Colaboradores ativos"
@@ -370,6 +394,7 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               title="Status calculado pelo último registro de ponto, não pela conexão à plataforma."
               icon="◷"
             />
+            <MetricCard href="/time" label="Em intervalo" value={String(active?.onBreak ?? 0)} detail="Status pelo último registro do dia" title="Colaboradores cujo último registro de jornada é início de intervalo." icon="Ⅱ" />
             <MetricCard
               href="/time"
               label="Horas registradas"
@@ -386,6 +411,16 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               title="Horas registradas no período divididas pelo total atual de colaboradores ativos."
               icon="⌁"
             />
+            <MetricCard href="/projects" label="Projetos ativos" value={String(overview.projects.active)} detail={`${overview.projects.total} projetos no total`} title="Projetos com status ativo na empresa." icon="▦" />
+            <MetricCard href="/projects" label="Tarefas pendentes" value={String(overview.projects.pendingTasks)} detail="A fazer, em andamento ou revisão" title="Tarefas que ainda não foram concluídas." icon="≡" />
+            <MetricCard href="/projects" label="Tarefas atrasadas" value={String(overview.projects.overdueTasks)} detail="Prazo anterior a hoje e não concluídas" title="Tarefas vencidas segundo o prazo salvo." icon="!" />
+            <MetricCard href="/inbox" label="Notificações não lidas" value={String(overview.unreadNotifications)} detail="Somente notificações da sua conta" title="Notificações não lidas destinadas a você." icon="◉" />
+            <MetricCard href="/meetings" label="Reuniões agendadas" value={String(overview.upcomingMeetingsCount)} detail="Próximas, com acesso permitido a você" title="Total de reuniões futuras que você pode ver." icon="◷" />
+          </section>
+
+          <section className="card p-5">
+            <div className="mb-5 flex items-center justify-between gap-3"><div><p className="eyebrow">Projetos e entregas</p><h2 className="mt-1 text-lg font-semibold">Andamento operacional</h2></div><span className="text-xs text-muted">Dados persistidos</span></div>
+            <OperationsBreakdown overview={overview} />
           </section>
 
           <section className="dashboard-primary-grid grid gap-4 xl:grid-cols-2">
@@ -457,6 +492,10 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
                 </ActivityFeed>
               )}
             </article>
+            <article className="card p-5">
+              <div className="mb-4 flex items-end justify-between gap-3"><div><p className="eyebrow">Agenda</p><h2 className="mt-1 text-lg font-semibold">Próximas reuniões</h2></div><a href="/meetings" className="text-xs font-medium text-primary">Ver agenda</a></div>
+              {overview.upcomingMeetings.length ? <ul className="divide-y divide-line/60">{overview.upcomingMeetings.map((meeting) => <li key={meeting.id} className="flex items-center gap-3 py-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">◷</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{meeting.name}</p><p className="mt-1 text-xs text-muted">{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(meeting.startsAt))} · {meeting.durationMinutes} min</p></div></li>)}</ul> : <EmptyState title="Agenda livre" description="Nenhuma reunião futura visível para você." action={<a className="text-xs text-primary" href="/meetings">Abrir reuniões</a>} />}
+            </article>
           </section>
 
           <section>
@@ -465,24 +504,6 @@ function ExecutiveDashboard({ user }: { user: AuthUser }) {
               <h2 className="mt-1 text-lg font-semibold">Outros módulos operacionais</h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {!overview.availability.projects && (
-                <FeatureUnavailable
-                  title="Projetos"
-                  description="O sistema ainda não possui módulo ou dados de projetos para apresentar."
-                />
-              )}
-              {!overview.availability.tasks && (
-                <FeatureUnavailable
-                  title="Tarefas e produtividade"
-                  description="Não há tarefas integradas; nenhuma taxa de conclusão ou produtividade foi estimada."
-                />
-              )}
-              {!overview.availability.meetings && (
-                <FeatureUnavailable
-                  title="Reuniões"
-                  description="O sistema ainda não possui agenda ou dados de reuniões."
-                />
-              )}
               {!overview.availability.intelligence && (
                 <FeatureUnavailable
                   title="Inteligência Vizion"

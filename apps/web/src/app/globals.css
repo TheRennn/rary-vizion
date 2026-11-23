@@ -302,6 +302,7 @@ body {
   .command-footer { justify-content: space-between; gap: 5px; }
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
@@ -633,4 +634,35 @@ body {
   .metric-card {
     min-height: 145px;
   }
+}
+
+/* Sprint 12: responsive layout refinements and notification indicators. */
+.notification-button { position: relative; }
+.notification-count, .nav-unread-count { display: inline-flex; min-width: 17px; height: 17px; align-items: center; justify-content: center; border: 1px solid rgb(13 13 13 / .9); border-radius: 999px; background: #8b5cf6; padding: 0 4px; color: white; font-size: 9px; font-weight: 700; line-height: 1; }
+.notification-count { position: absolute; top: -3px; right: -4px; }
+.nav-unread-count { flex: 0 0 auto; background: rgb(139 92 246 / .18); border-color: rgb(139 92 246 / .18); color: #c4b5fd; }
+.metric-card { min-height: 128px; border-radius: 14px; padding: 15px; }
+.metric-card > p:nth-of-type(1) { margin-top: 9px; font-size: 27px; }
+.metric-card > p:nth-of-type(2) { margin-top: 5px; font-size: 10px; }
+.app-content .card { min-width: 0; }
+.app-main { overflow-x: clip; }
+.workspace-widget { transition: border-color 150ms ease, background 150ms ease; }
+.workspace-widget:hover { border-color: rgb(255 255 255 / .12) !important; }
+@media (max-width: 639px) {
+  .page-heading { align-items: flex-start; flex-direction: column; }
+  .page-heading > .flex.shrink-0 { width: 100%; flex-wrap: wrap; }
+  .dashboard-primary-grid, .dashboard-secondary-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-section-title { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .data-table { min-width: 620px; }
+  .filter-bar > * { max-width: 100%; }
+}
+@media (min-width: 1600px) {
+  .app-content { max-width: 1540px; }
+  .app-main { padding-inline: 40px; }
+}
+@media (min-width: 1920px) { .app-content { max-width: 1680px; } }
+@media (max-width: 359px) {
+  .app-main { padding-inline: 10px; }
+  .app-content h1 { font-size: 24px !important; }
+  .metric-card { padding: 12px; }
 }

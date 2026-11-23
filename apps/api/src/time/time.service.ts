@@ -1,40 +1,22 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/auth-user';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseDataService } from '../supabase/supabase.service';
 import { ClockDto, HistoryQueryDto } from './dto/time.dto';
-import { ALLOWED_TRANSITIONS, computeWorkedSeconds, statusFromLastEntry } from './time.rules';
+import { computeWorkedSeconds, statusFromLastEntry } from './time.rules';
 
 const HISTORY_LIMIT = 1000;
 const DEFAULT_HISTORY_DAYS = 30;
 
 @Injectable()
 export class TimeService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(private readonly db: SupabaseDataService, private readonly audit: AuditService) {}
 
   async clock(user: AuthUser, dto: ClockDto) {
     try {
-      // Serializable evita dois registros simultâneos violarem a máquina de estados.
-      const result = await this.prisma.$transaction(
-        async (tx) => {
-          const last = await tx.timeEntry.findFirst({
-            where: { userId: user.id },
-            orderBy: { recordedAt: 'desc' },
-            select: { type: true },
-          });
-          const current = statusFromLastEntry(last?.type);
-
-          if (!ALLOWED_TRANSITIONS[current].includes(dto.type)) {
-            throw new BadRequestException(`Registro "${dto.type}" não é permitido no estado atual (${current})`);
-          }
-
-          const entry = await tx.timeEntry.create({
-            data: { companyId: user.companyId, userId: user.id, type: dto.type, note: dto.note?.trim() || null },
-          });
-          return { entry, status: statusFromLastEntry(entry.type) };
-        },
-      );
+      const entry = await this.db.recordTimeEntry(user.companyId, user.id, dto.type, dto.note?.trim() || null);
+      const result = { entry, status: statusFromLastEntry(entry.type) };
 
       await this.audit.log({
         companyId: user.companyId,
@@ -46,9 +28,6 @@ export class TimeService {
       });
       return result;
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034') {
-        throw new ConflictException('Conflito ao registrar o ponto, tente novamente');
-      }
       throw e;
     }
   }
@@ -59,12 +38,12 @@ export class TimeService {
     startOfDay.setHours(0, 0, 0, 0);
 
     const [entries, last] = await Promise.all([
-      this.prisma.timeEntry.findMany({
+      this.db.timeEntry.findMany({
         where: { userId: user.id, recordedAt: { gte: startOfDay } },
         orderBy: { recordedAt: 'asc' },
         select: { id: true, type: true, recordedAt: true, note: true },
       }),
-      this.prisma.timeEntry.findFirst({
+      this.db.timeEntry.findFirst({
         where: { userId: user.id },
         orderBy: { recordedAt: 'desc' },
         select: { type: true, recordedAt: true },
@@ -85,7 +64,7 @@ export class TimeService {
     const from = query.from ? new Date(query.from) : new Date(to.getTime() - DEFAULT_HISTORY_DAYS * 86_400_000);
     if (from > to) throw new BadRequestException('"from" deve ser anterior a "to"');
 
-    return this.prisma.timeEntry.findMany({
+    return this.db.timeEntry.findMany({
       where: { userId: user.id, recordedAt: { gte: from, lte: to } },
       orderBy: { recordedAt: 'desc' },
       take: HISTORY_LIMIT,
@@ -95,7 +74,7 @@ export class TimeService {
 
   /** Presença da equipe: último registro de cada usuário ativo da empresa. */
   async team(companyId: string) {
-    const users = await this.prisma.user.findMany({
+    const users = await this.db.user.findMany({
       where: { companyId, active: true },
       orderBy: { name: 'asc' },
       select: {

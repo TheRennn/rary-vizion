@@ -25,6 +25,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       : HttpStatus.INTERNAL_SERVER_ERROR;
     const requestId = request.requestId ?? 'unknown';
     const path = request.originalUrl.split('?')[0];
+    const logPath = request.route ? `${request.baseUrl}${request.route.path}` : 'unmatched';
 
     let message: string | string[] = 'Erro interno do servidor';
     if (exception instanceof HttpException) {
@@ -40,10 +41,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       event: 'http.request.failed',
       requestId,
       method: request.method,
-      path,
+      path: logPath,
       status,
     });
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) this.logger.error(log, exception instanceof Error ? exception.stack : undefined);
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) this.logger.error(log);
     else this.logger.warn(log);
 
     response.status(status).json({

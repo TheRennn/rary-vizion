@@ -2,10 +2,13 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { useAuth } from '@/components/auth-provider';
 
 type Meeting = { id: string; name: string; description: string | null; startsAt: string; durationMinutes: number; code: string; accessMode: string; participants: Array<{ userId: string; joinedAt: string | null }> };
 
 export default function MeetingsPage() {
+  const { can } = useAuth();
+  const canCreate = can('meetings', 'create');
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +57,14 @@ export default function MeetingsPage() {
           </li>)}{meetings.length === 0 && <li className="text-center text-xs text-muted">Nenhuma reunião criada</li>}</div>
         </section>
         <aside className="space-y-4">
-          <form onSubmit={create} className="card space-y-3 p-4">
+          {canCreate && <form onSubmit={create} className="card space-y-3 p-4">
             <p className="eyebrow">Criar reunião</p>
             <input name="name" className="input w-full" placeholder="Nome" required />
             <textarea name="description" className="input min-h-20 w-full resize-none" placeholder="Descrição e pauta" />
             <div className="grid grid-cols-2 gap-2"><input name="date" type="date" className="input" required /><input name="time" type="time" className="input" required /></div>
             <div className="grid grid-cols-2 gap-2"><select name="duration" className="input" defaultValue="30"><option value="30">30 min</option><option value="60">60 min</option><option value="90">90 min</option></select><select name="access" className="input"><option value="TEAM">Equipe</option><option value="PRIVATE">Privada</option></select></div>
             <button className="btn w-full">Criar e gerar link</button>
-          </form>
+          </form>}
           <div className="card space-y-3 p-4">
             <p className="eyebrow">Ingresar por código</p>
             <input className="input w-full" value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} placeholder="Código da reunião" />

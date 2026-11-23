@@ -18,19 +18,19 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 export default function AuditPage() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [logs, setLogs] = useState<AuditLog[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user || !hasMinRole(user.role, 'ADMIN')) return;
+    if (!user || !hasMinRole(user.role, 'ADMIN') || !can('audit', 'view')) return;
     api<AuditLog[]>('/audit')
       .then(setLogs)
       .catch((e) => setError(e instanceof Error ? e.message : 'Erro ao carregar auditoria'));
-  }, [user]);
+  }, [user, can]);
 
   if (!user) return null;
-  if (!hasMinRole(user.role, 'ADMIN')) {
+  if (!hasMinRole(user.role, 'ADMIN') || !can('audit', 'view')) {
     return (
       <section className="card max-w-xl p-6">
         <p className="eyebrow">Acesso restrito</p>

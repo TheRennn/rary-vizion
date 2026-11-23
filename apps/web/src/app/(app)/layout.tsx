@@ -22,8 +22,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <p className="text-sm text-muted">{apiOffline}</p>
           <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
             <li>Abra <code className="text-fg">http://localhost:3333/api/health</code> no navegador. Deve responder <code className="text-fg">status: ok</code>.</li>
-            <li>Se não abrir, olhe o terminal do <code className="text-fg">npm run dev</code>: o erro da API aparece lá (.env, banco ou Prisma).</li>
-            <li>Primeira vez? Rode <code className="text-fg">npm run setup</code> e depois <code className="text-fg">npm run dev</code>.</li>
+            <li>Se não abrir, confira no terminal se a API carregou o <code className="text-fg">apps/api/.env</code> e conectou ao Supabase.</li>
+            <li>Se ainda não configurou o ambiente, rode <code className="text-fg">npm run setup</code> e depois <code className="text-fg">npm run dev</code>.</li>
           </ol>
           <button className="btn" onClick={() => window.location.reload()}>Tentar novamente</button>
         </div>

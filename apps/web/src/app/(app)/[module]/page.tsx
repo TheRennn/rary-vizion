@@ -4,7 +4,6 @@ import { EmptyState, PageHeading, StatusIndicator } from '@/components/design-sy
 
 const MODULES: Record<string, { title: string; category: string; description: string; available: boolean; dependencies: string[] }> = {
   inbox: { title: 'Caixa de entrada', category: 'Espaço de trabalho', description: 'Central de notificações e itens que precisam da sua atenção.', available: false, dependencies: ['Notificações persistentes', 'Preferências de alerta'] },
-  workspace: { title: 'Meu espaço de trabalho', category: 'Espaço de trabalho', description: 'Visão da organização, equipes e recursos compartilhados.', available: false, dependencies: ['Diretório da organização', 'Permissões por área'] },
   projects: { title: 'Projetos', category: 'Organização', description: 'Projetos e tarefas com status, responsáveis e histórico.', available: false, dependencies: ['Modelo persistente de projetos e tarefas', 'Permissões e atividade'] },
   voice: { title: 'Voz', category: 'Comunicação', description: 'Salas de voz organizadas por equipe e departamento.', available: false, dependencies: ['Infraestrutura de mídia', 'Presença e autorização de sala'] },
   meetings: { title: 'Reuniões', category: 'Comunicação', description: 'Agenda de reuniões, participantes e sessões.', available: false, dependencies: ['Calendário e fuso horário', 'Integração de áudio e vídeo'] },

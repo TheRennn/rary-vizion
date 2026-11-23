@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StatusBadge } from '@/components/status-badge';
 import { api } from '@/lib/api';
+import { useAuth } from '@/components/auth-provider';
 import { formatDuration, formatTime } from '@/lib/format';
 import type { PresenceStatus, TimeEntry, TimeEntryType, TodayResponse } from '@/lib/types';
 
@@ -26,6 +27,8 @@ const ENTRY_LABEL: Record<TimeEntryType, string> = {
 };
 
 export default function TimePage() {
+  const { can } = useAuth();
+  const canClock = can('time', 'create');
   const [data, setData] = useState<TodayResponse | null>(null);
   const [history, setHistory] = useState<TimeEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +100,7 @@ export default function TimePage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {data &&
+              {data && canClock &&
                 ACTIONS[data.status].map((a) => (
                   <button
                     key={a.type}

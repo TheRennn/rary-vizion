@@ -8,31 +8,33 @@ import { useAuth } from '@/components/auth-provider';
 import { ROLE_LABEL } from '@/lib/roles';
 import { ContextPanel, openContextPanel } from '@/components/context-panel';
 import { api } from '@/lib/api';
-import type { Employee } from '@/lib/types';
 
-type NavItem = { href: string; label: string; icon: string; admin?: boolean; soon?: boolean };
+type NavItem = { href: string; label: string; icon: string; module?: string; admin?: boolean; ownerOnly?: boolean; soon?: boolean };
 const GROUPS: { label: string; items: NavItem[] }[] = [
   { label: 'Espaço de trabalho', items: [
-    { href: '/dashboard', label: 'Painel', icon: 'grid' },
-    { href: '/inbox', label: 'Caixa de entrada', icon: 'inbox' },
-    { href: '/workspace', label: 'Meu espaço de trabalho', icon: 'home' },
+    { href: '/dashboard', label: 'Painel', icon: 'grid', module: 'dashboard' },
+    { href: '/activity', label: 'Atividades', icon: 'activity', module: 'dashboard' },
+    { href: '/calendar', label: 'Calendário', icon: 'calendar', module: 'workspace' },
+    { href: '/inbox', label: 'Caixa de entrada', icon: 'inbox', module: 'inbox' },
+    { href: '/workspace', label: 'Meu espaço de trabalho', icon: 'home', module: 'workspace' },
   ] },
   { label: 'Organização', items: [
-    { href: '/workforce', label: 'Equipe', icon: 'users' },
-    { href: '/time', label: 'Jornada', icon: 'clock' },
-    { href: '/projects', label: 'Projetos', icon: 'folder' },
-    { href: '/chat', label: 'Chat', icon: 'chat' },
-    { href: '/voice', label: 'Voz', icon: 'mic', soon: true },
-    { href: '/meetings', label: 'Reuniões', icon: 'video' },
-    { href: '/monitor', label: 'Monitoramento', icon: 'activity', soon: true },
-    { href: '/intelligence', label: 'Inteligência', icon: 'spark', soon: true },
-    { href: '/documents', label: 'Documentos', icon: 'file', soon: true },
-    { href: '/reports', label: 'Relatórios', icon: 'chart' },
-    { href: '/automations', label: 'Automações', icon: 'bolt', soon: true },
+    { href: '/workforce', label: 'Equipe', icon: 'users', module: 'workforce' },
+    { href: '/time', label: 'Jornada', icon: 'clock', module: 'time' },
+    { href: '/projects', label: 'Projetos', icon: 'folder', module: 'projects' },
+    { href: '/chat', label: 'Chat', icon: 'chat', module: 'chat' },
+    { href: '/voice', label: 'Voz', icon: 'mic', module: 'voice', soon: true },
+    { href: '/meetings', label: 'Reuniões', icon: 'video', module: 'meetings' },
+    { href: '/monitor', label: 'Monitoramento', icon: 'activity', module: 'monitor', soon: true },
+    { href: '/intelligence', label: 'Inteligência', icon: 'spark', module: 'intelligence', soon: true },
+    { href: '/documents', label: 'Documentos', icon: 'file', module: 'documents', soon: true },
+    { href: '/reports', label: 'Relatórios', icon: 'chart', module: 'reports' },
+    { href: '/automations', label: 'Automações', icon: 'bolt', module: 'automations', soon: true },
   ] },
   { label: 'Administração', items: [
-    { href: '/audit', label: 'Auditoria', icon: 'shield', admin: true },
-    { href: '/settings', label: 'Configurações', icon: 'settings' },
+    { href: '/audit', label: 'Auditoria', icon: 'shield', module: 'audit', admin: true },
+    { href: '/settings', label: 'Configurações', icon: 'settings', module: 'settings' },
+    { href: '/settings/permissions', label: 'Permissões', icon: 'shield', module: 'settings', ownerOnly: true },
   ] },
 ];
 
@@ -55,6 +57,8 @@ function Icon({ name, className = 'h-4 w-4' }: { name: string; className?: strin
     chart: <><path d="M4 19V5M4 19h17" /><path d="m7 15 4-4 3 2 5-6" /></>,
     bolt: <path d="m13 2-3 9h7l-6 11 2-9H6z" />,
     settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.5.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.5-.9l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.5.9l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 1.8Z" transform="translate(-1 -1)" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /><path d="M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" /></>,
+    check: <><path d="m5 12 4 4L19 6" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></>,
     search: <><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></>,
     plus: <><path d="M12 5v14M5 12h14" /></>,
     chevron: <path d="m9 18 6-6-6-6" />,
@@ -66,11 +70,12 @@ function Icon({ name, className = 'h-4 w-4' }: { name: string; className?: strin
 }
 
 type Command = { label: string; hint: string; href?: string; action?: () => void; icon: string };
+type SearchResult = { type: string; title: string; subtitle: string; href: string };
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, can, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -78,10 +83,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>(['/dashboard', '/workforce']);
   const [favoriteReady, setFavoriteReady] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [people, setPeople] = useState<Employee[]>([]);
-  const [peopleLoaded, setPeopleLoaded] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === 'OWNER' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isOwner = user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN';
   const currentLabel = ROUTE_NAMES[pathname] ?? (pathname.startsWith('/projects/') ? 'Projetos' : 'RARY Vizion');
 
   useEffect(() => {
@@ -104,14 +111,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [commandOpen]);
 
   useEffect(() => {
-    if (!commandOpen) { setPeople([]); setPeopleLoaded(false); return; }
-    if (query.trim().length < 2 || peopleLoaded) return;
+    if (!commandOpen || query.trim().length < 2) { setSearchResults([]); setSearchLoading(false); return; }
+    let active = true;
     const timer = setTimeout(() => {
-      setPeopleLoaded(true);
-      void api<Employee[]>('/users').then(setPeople).catch(() => setPeople([]));
+      setSearchLoading(true);
+      void api<{ results: SearchResult[] }>(`/search?q=${encodeURIComponent(query.trim())}`).then((value) => { if (active) setSearchResults(value.results); }).catch(() => { if (active) setSearchResults([]); }).finally(() => { if (active) setSearchLoading(false); });
     }, 180);
-    return () => clearTimeout(timer);
-  }, [commandOpen, query, peopleLoaded]);
+    return () => { active = false; clearTimeout(timer); };
+  }, [commandOpen, query]);
+
+  useEffect(() => {
+    if (!user || !can('inbox', 'view')) { setUnreadCount(0); return; }
+    let active = true;
+    const refresh = () => void api<Array<{ readAt: string | null }>>('/notifications').then((items) => {
+      if (active) setUnreadCount(items.filter((item) => !item.readAt).length);
+    }).catch(() => { if (active) setUnreadCount(0); });
+    refresh();
+    const timer = setInterval(refresh, 60_000);
+    return () => { active = false; clearInterval(timer); };
+  }, [user, can]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -126,17 +144,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, []);
 
   const commands: Command[] = useMemo(() => [
-    ...GROUPS.flatMap((group) => group.items.filter((item) => !item.admin || isAdmin).map((item) => ({ label: item.label, hint: 'Navegar', href: item.href, icon: item.icon }))),
+    ...GROUPS.flatMap((group) => group.items.filter((item) => (!item.admin || isAdmin) && (!item.ownerOnly || isOwner) && (!item.module || can(item.module, 'view'))).map((item) => ({ label: item.label, hint: 'Navegar', href: item.href, icon: item.icon }))),
     { label: 'Abrir jornada', hint: 'Ir para o registro de jornada', href: '/time', icon: 'clock' },
     { label: 'Abrir equipe', hint: 'Ir para a gestão de pessoas', href: '/workforce', icon: 'plus' },
     { label: 'Informações do espaço de trabalho', hint: 'Abrir painel contextual', action: () => user && openContextPanel({ title: user.company.name, eyebrow: 'Espaço de trabalho', description: 'Espaço da organização no RARY Vizion.', fields: [['Plano', 'Ambiente de demonstração'], ['Seu papel', ROLE_LABEL[user.role]], ['Conta', user.email]] }), icon: 'panel' },
-    ...people.filter((person) => `${person.name} ${person.email} ${person.jobTitle ?? ''} ${person.department?.name ?? ''}`.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR'))).slice(0, 8).map((person) => ({
-      label: person.name,
-      hint: `Colaborador · ${person.department?.name ?? 'sem departamento'}`,
-      icon: 'users',
-      action: () => openContextPanel({ title: person.name, eyebrow: 'Perfil de colaborador', description: person.email, fields: [['Status', person.active ? 'Ativo' : 'Arquivado'], ['Cargo', person.jobTitle ?? 'Não informado'], ['Departamento', person.department?.name ?? 'Sem departamento'], ['Papel', ROLE_LABEL[person.role]]] }),
-    })),
-  ], [isAdmin, people, query, user]);
+    ...searchResults.map((item) => ({ label: item.title, hint: item.subtitle, href: item.href, icon: ({ project: 'folder', task: 'check', person: 'users', meeting: 'video', conversation: 'chat', event: 'calendar' } as Record<string, string>)[item.type] ?? 'search' })),
+  ], [isAdmin, isOwner, can, searchResults, user]);
   const filteredCommands = commands.filter((command) => `${command.label} ${command.hint}`.toLowerCase().includes(query.toLowerCase()));
 
   function navigate(command?: Command) {
@@ -182,10 +195,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <button className="sidebar-search" title="Pesquisar (Ctrl K)" onClick={() => setCommandOpen(true)}><Icon name="search" /><span>{collapsed ? '' : 'Pesquisar'}</span>{!collapsed && <kbd>Ctrl K</kbd>}</button>
       <nav className="sidebar-navigation" aria-label="Navegação principal">
-        {favorites.length > 0 && <div className="nav-group"><div className="nav-group-title">{!collapsed && 'Favoritos'}</div>{GROUPS.flatMap((group) => group.items).filter((item) => favorites.includes(item.href) && (!item.admin || isAdmin)).map((item) => <NavLink key={`fav-${item.href}`} item={item} collapsed={collapsed} active={pathname === item.href} onToggleFavorite={toggleFavorite} favorite onNavigate={() => setMobileOpen(false)} />)}</div>}
+        {favorites.length > 0 && <div className="nav-group"><div className="nav-group-title">{!collapsed && 'Favoritos'}</div>{GROUPS.flatMap((group) => group.items).filter((item) => favorites.includes(item.href) && (!item.admin || isAdmin) && (!item.ownerOnly || isOwner) && (!item.module || can(item.module, 'view'))).map((item) => <NavLink key={`fav-${item.href}`} item={item} collapsed={collapsed} active={pathname === item.href} onToggleFavorite={toggleFavorite} favorite unreadCount={item.href === '/inbox' ? unreadCount : 0} onNavigate={() => setMobileOpen(false)} />)}</div>}
         {GROUPS.map((group) => {
-          const items = group.items.filter((item) => !item.admin || isAdmin);
-          return <div key={group.label} className="nav-group"><div className="nav-group-title">{!collapsed && group.label}</div>{items.map((item) => <NavLink key={item.href} item={item} collapsed={collapsed} active={pathname === item.href} onToggleFavorite={toggleFavorite} favorite={favorites.includes(item.href)} onNavigate={() => setMobileOpen(false)} />)}</div>;
+          const items = group.items.filter((item) => (!item.admin || isAdmin) && (!item.ownerOnly || isOwner) && (!item.module || can(item.module, 'view')));
+          return <div key={group.label} className="nav-group"><div className="nav-group-title">{!collapsed && group.label}</div>{items.map((item) => <NavLink key={item.href} item={item} collapsed={collapsed} active={pathname === item.href} onToggleFavorite={toggleFavorite} favorite={favorites.includes(item.href)} unreadCount={item.href === '/inbox' ? unreadCount : 0} onNavigate={() => setMobileOpen(false)} />)}</div>;
         })}
       </nav>
 
@@ -206,7 +219,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="topbar-breadcrumb"><span className="text-muted">RARY Vizion</span><Icon name="chevron" className="h-3 w-3 text-muted/60" /><span>{currentLabel}</span></div>
         <div className="ml-auto flex items-center gap-1.5">
           <button className="topbar-search" onClick={() => setCommandOpen(true)} aria-label="Pesquisar no espaço de trabalho"><Icon name="search" /><span>Pesquisar</span><kbd>Ctrl K</kbd></button>
-          <button className="icon-button" aria-label="Notificações" title="Notificações" onClick={() => router.push('/inbox')}><Icon name="bell" /></button>
+          <button className="icon-button notification-button" aria-label={unreadCount ? `Notificações, ${unreadCount} não lidas` : 'Notificações'} title={unreadCount ? `${unreadCount} não lidas` : 'Notificações'} onClick={() => router.push('/inbox')}><Icon name="bell" />{unreadCount > 0 && <span className="notification-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}</button>
           <button className="avatar-small topbar-avatar" aria-label="Abrir perfil" onClick={() => user && openContextPanel({ title: user.name, eyebrow: 'Seu perfil', fields: [['E-mail', user.email], ['Papel', ROLE_LABEL[user.role]]] })}>{user?.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</button>
         </div>
       </header>
@@ -217,7 +230,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {commandOpen && <div className="command-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCommandOpen(false); }}>
         <section className="command-dialog" role="dialog" aria-modal="true" aria-label="Menu de comandos">
           <div className="command-input-wrap"><Icon name="search" className="h-4 w-4 shrink-0 text-muted" /><input ref={inputRef} value={query} onChange={(event) => { setQuery(event.target.value); setActiveIndex(0); }} onKeyDown={onCommandKeyDown} placeholder="Ir para… ou pesquisar uma ação" aria-label="Pesquisar comandos" /><kbd>ESC</kbd></div>
-          <div className="command-results" role="listbox">{filteredCommands.map((command, index) => <button key={`${command.label}-${command.hint}`} role="option" aria-selected={activeIndex === index} className={`command-option ${activeIndex === index ? 'command-option-active' : ''}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => navigate(command)}><span className="command-icon"><Icon name={command.icon} /></span><span className="flex-1 text-left">{command.label}</span><span className="text-xs text-muted">{command.hint}</span></button>)}{filteredCommands.length === 0 && <div className="px-4 py-8 text-center text-sm text-muted">Nenhum resultado para “{query}”.</div>}</div>
+          <div className="command-results" role="listbox">{filteredCommands.map((command, index) => <button key={`${command.label}-${command.hint}`} role="option" aria-selected={activeIndex === index} className={`command-option ${activeIndex === index ? 'command-option-active' : ''}`} onMouseEnter={() => setActiveIndex(index)} onClick={() => navigate(command)}><span className="command-icon"><Icon name={command.icon} /></span><span className="flex-1 text-left">{command.label}</span><span className="text-xs text-muted">{command.hint}</span></button>)}{searchLoading && <div className="px-4 py-3 text-center text-xs text-muted" role="status">Pesquisando recursos…</div>}{filteredCommands.length === 0 && !searchLoading && <div className="px-4 py-8 text-center text-sm text-muted">Nenhum resultado para “{query}”.</div>}</div>
           <div className="command-footer"><span>↑↓ navegar</span><span>↵ abrir</span><span>Esc fechar</span></div>
         </section>
       </div>}
@@ -226,9 +239,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function NavLink({ item, collapsed, active, favorite, onToggleFavorite, onNavigate }: { item: NavItem; collapsed: boolean; active: boolean; favorite: boolean; onToggleFavorite: (href: string) => void; onNavigate: () => void }) {
+function NavLink({ item, collapsed, active, favorite, unreadCount = 0, onToggleFavorite, onNavigate }: { item: NavItem; collapsed: boolean; active: boolean; favorite: boolean; unreadCount?: number; onToggleFavorite: (href: string) => void; onNavigate: () => void }) {
   return <div className={`nav-link-wrap ${active ? 'is-active' : ''}`}>
-    <Link href={item.href} onClick={onNavigate} title={collapsed ? item.label : undefined} aria-current={active ? 'page' : undefined} className="sidebar-link"><Icon name={item.icon} /><span className="nav-link-label">{item.label}</span>{item.soon && !collapsed && <span className="sidebar-soon">em breve</span>}</Link>
+    <Link href={item.href} onClick={onNavigate} title={collapsed ? `${item.label}${unreadCount ? ` · ${unreadCount} não lidas` : ''}` : undefined} aria-current={active ? 'page' : undefined} className="sidebar-link"><Icon name={item.icon} /><span className="nav-link-label">{item.label}</span>{unreadCount > 0 && <span className="nav-unread-count">{unreadCount > 99 ? '99+' : unreadCount}</span>}{item.soon && !collapsed && <span className="sidebar-soon">em breve</span>}</Link>
     {!collapsed && !item.soon && <button className={`favorite-toggle ${favorite ? 'is-favorite' : ''}`} aria-label={favorite ? `Remover ${item.label} dos favoritos` : `Favoritar ${item.label}`} title={favorite ? 'Remover dos favoritos' : 'Adicionar aos favoritos'} onClick={() => onToggleFavorite(item.href)}><Icon name="star" className="h-3 w-3" /></button>}
   </div>;
 }

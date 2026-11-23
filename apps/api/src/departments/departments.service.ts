@@ -1,16 +1,16 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+
 import { AuditService } from '../audit/audit.service';
 import { AuthUser } from '../common/auth-user';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseDataService } from '../supabase/supabase.service';
 import { CreateDepartmentDto } from './dto/department.dto';
 
 @Injectable()
 export class DepartmentsService {
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(private readonly db: SupabaseDataService, private readonly audit: AuditService) {}
 
   list(companyId: string) {
-    return this.prisma.department.findMany({
+    return this.db.department.findMany({
       where: { companyId },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, _count: { select: { users: true } } },
@@ -19,7 +19,7 @@ export class DepartmentsService {
 
   async create(actor: AuthUser, dto: CreateDepartmentDto) {
     try {
-      const department = await this.prisma.department.create({
+      const department = await this.db.department.create({
         data: { companyId: actor.companyId, name: dto.name.trim() },
         select: { id: true, name: true },
       });
@@ -33,7 +33,7 @@ export class DepartmentsService {
       });
       return department;
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      if ((e as { code?: string })?.code === 'P2002') {
         throw new ConflictException('Já existe um departamento com esse nome');
       }
       throw e;

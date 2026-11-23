@@ -3,15 +3,16 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
-import { ROLE_LABEL, ROLE_RANK, hasMinRole } from '@/lib/roles';
+import { ROLE_LABEL, ROLE_RANK } from '@/lib/roles';
 import type { Department, Employee, Role } from '@/lib/types';
 import { openContextPanel } from '@/components/context-panel';
 
 export default function WorkforcePage() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const [employees, setEmployees] = useState<Employee[] | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [search, setSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -20,7 +21,10 @@ export default function WorkforcePage() {
   const [view, setView] = useState<'table' | 'cards'>('table');
   const [editing, setEditing] = useState<Employee | null>(null);
 
-  const canManage = !!user && hasMinRole(user.role, 'ADMIN');
+  const canEdit = can('workforce', 'edit');
+  const canCreate = can('workforce', 'create');
+  const canManageSessions = can('workforce', 'manage');
+  const canManage = canEdit || canCreate;
   const filteredEmployees = useMemo(() => (employees ?? []).filter((employee) => {
     const query = search.trim().toLocaleLowerCase('pt-BR');
     const matchesSearch = !query || `${employee.name} ${employee.email} ${employee.jobTitle ?? ''} ${employee.department?.name ?? ''}`
@@ -80,6 +84,15 @@ export default function WorkforcePage() {
     }
   }
 
+  async function revokeEmployeeSessions(employee: Employee) {
+    if (!canManageSessions || !window.confirm(`Encerrar todas as sessões de ${employee.name}?`)) return;
+    try {
+      const result = await api<{ revoked: number }>(`/users/${employee.id}/sessions`, { method: 'DELETE' });
+      setNotice(`${result.revoked} sessão(ões) encerrada(s) para ${employee.name}.`);
+      setError(null);
+    } catch (err) { setError(err instanceof Error ? err.message : 'Não foi possível encerrar as sessões'); }
+  }
+
   function showEmployee(employee: Employee) {
     openContextPanel({
       title: employee.name,
@@ -91,10 +104,13 @@ export default function WorkforcePage() {
         ['Departamento', employee.department?.name ?? 'Sem departamento'],
         ['Papel', ROLE_LABEL[employee.role]],
       ],
-      actions: canManage && ROLE_RANK[employee.role] < ROLE_RANK[user!.role]
+      actions: ROLE_RANK[employee.role] < ROLE_RANK[user!.role]
         ? [
+            ...(canEdit ? [
             { label: 'Editar perfil', onClick: () => setEditing(employee) },
             { label: employee.active ? 'Arquivar conta' : 'Reativar conta', onClick: () => void setEmployeeActive(employee) },
+            ] : []),
+            ...(canManageSessions ? [{ label: 'Encerrar sessões', onClick: () => void revokeEmployeeSessions(employee) }] : []),
           ]
         : [],
     });
@@ -151,6 +167,7 @@ export default function WorkforcePage() {
       </header>
 
       {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/5 px-4 py-3 text-sm text-red-300">{error}</p>}
+      {notice && <p role="status" className="status-success rounded-xl px-4 py-3 text-sm">{notice}</p>}
 
       <section className="card space-y-4 p-4 sm:p-5" aria-label="Filtros de colaboradores">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_repeat(3,minmax(9rem,13rem))_auto]">
@@ -193,7 +210,7 @@ export default function WorkforcePage() {
             <div className="grid gap-2 p-3 sm:grid-cols-2 2xl:grid-cols-3">{filteredEmployees.map((employee) => <article key={employee.id} className="rounded-lg border border-line/80 bg-surface2/25 p-3">
               <div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{employee.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}</div><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-semibold">{employee.name}</h3><p className="truncate text-xs text-muted">{employee.email}</p></div><span className={`rounded-full px-2 py-1 text-[10px] ${employee.active ? 'bg-emerald-400/10 text-emerald-300' : 'bg-surface text-muted'}`}>{employee.active ? 'Ativo' : 'Arquivado'}</span></div>
               <div className="mt-4 space-y-2 border-t border-line/70 pt-3 text-xs"><p><span className="text-muted">Cargo</span><span className="float-right">{employee.jobTitle ?? '—'}</span></p><p><span className="text-muted">Departamento</span><span className="float-right">{employee.department?.name ?? '—'}</span></p><p><span className="text-muted">Papel</span><span className="float-right">{ROLE_LABEL[employee.role]}</span></p></div>
-              <div className="mt-3 flex gap-2 border-t border-line/70 pt-2"><button type="button" className="btn-ghost flex-1" onClick={() => showEmployee(employee)}>Detalhes</button>{canManage && ROLE_RANK[employee.role] < ROLE_RANK[user.role] && <button type="button" className="btn-ghost flex-1" onClick={() => setEditing(employee)}>Editar</button>}</div>
+              <div className="mt-3 flex gap-2 border-t border-line/70 pt-2"><button type="button" className="btn-ghost flex-1" onClick={() => showEmployee(employee)}>Detalhes</button>{canEdit && ROLE_RANK[employee.role] < ROLE_RANK[user.role] && <button type="button" className="btn-ghost flex-1" onClick={() => setEditing(employee)}>Editar</button>}</div>
             </article>)}</div>
           ) : <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="border-b border-line/70 text-[11px] uppercase tracking-wider text-muted">
@@ -202,12 +219,12 @@ export default function WorkforcePage() {
                 <th className="px-5 py-3 font-medium">Papel</th>
                 <th className="px-5 py-3 font-medium">Departamento</th>
                 <th className="px-5 py-3 font-medium">Cargo</th>
-                {canManage && <th className="px-5 py-3 font-medium">Ações</th>}
+                {canEdit && <th className="px-5 py-3 font-medium">Ações</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {employees === null ? (
-                <tr><td colSpan={canManage ? 5 : 4} className="px-5 py-5 text-muted">Carregando colaboradores…</td></tr>
+                <tr><td colSpan={canEdit ? 5 : 4} className="px-5 py-5 text-muted">Carregando colaboradores…</td></tr>
               ) : (
                 filteredEmployees.map((e) => (
                   <tr key={e.id} className="transition-colors hover:bg-white/[0.025]">
@@ -225,7 +242,7 @@ export default function WorkforcePage() {
                     <td className="px-5 py-3.5"><span className="rounded-md border border-line bg-surface2/60 px-2 py-1 text-xs">{ROLE_LABEL[e.role]}</span><span className={`ml-2 rounded-full px-2 py-1 text-[10px] ${e.active ? 'bg-emerald-400/10 text-emerald-300' : 'bg-surface text-muted'}`}>{e.active ? 'Ativo' : 'Arquivado'}</span></td>
                     <td className="px-5 py-3.5 text-muted">{e.department?.name ?? '—'}</td>
                     <td className="px-5 py-3.5 text-muted">{e.jobTitle ?? '—'}</td>
-                    {canManage && <td className="px-5 py-3.5">{ROLE_RANK[e.role] < ROLE_RANK[user.role] && <div className="flex gap-2"><button type="button" className="text-xs text-primary hover:text-fg" onClick={() => setEditing(e)}>Editar</button><button type="button" disabled={submitting} className="text-xs text-muted hover:text-red-300" onClick={() => void setEmployeeActive(e)}>{e.active ? 'Arquivar' : 'Reativar'}</button></div>}</td>}
+                    {canEdit && <td className="px-5 py-3.5">{ROLE_RANK[e.role] < ROLE_RANK[user.role] && <div className="flex gap-2"><button type="button" className="text-xs text-primary hover:text-fg" onClick={() => setEditing(e)}>Editar</button><button type="button" disabled={submitting} className="text-xs text-muted hover:text-red-300" onClick={() => void setEmployeeActive(e)}>{e.active ? 'Arquivar' : 'Reativar'}</button></div>}</td>}
                   </tr>
                 ))
               )}
@@ -235,37 +252,21 @@ export default function WorkforcePage() {
 
         {canManage && (
           <div className="space-y-6">
-            <form onSubmit={onCreateUser} className="card space-y-3 p-5">
-              <div>
-                <p className="eyebrow">Cadastro</p>
-                <h2 className="mt-1 text-sm font-semibold">Novo colaborador</h2>
-              </div>
+            {canCreate && <form onSubmit={onCreateUser} className="card space-y-3 p-5">
+              <div><p className="eyebrow">Cadastro</p><h2 className="mt-1 text-sm font-semibold">Novo colaborador</h2></div>
               <input name="name" placeholder="Nome" required minLength={2} className="input" />
               <input name="email" type="email" placeholder="E-mail" required className="input" />
               <input name="password" type="password" placeholder="Senha inicial (mín. 8)" required minLength={8} maxLength={72} className="input" />
               <input name="jobTitle" placeholder="Cargo (opcional)" maxLength={80} className="input" />
-              <select name="role" defaultValue="DEVELOPER" className="input" aria-label="Papel">
-                {assignableRoles.map((r) => (
-                  <option key={r} value={r}>{ROLE_LABEL[r]}</option>
-                ))}
-              </select>
-              <select name="departmentId" defaultValue="" className="input" aria-label="Departamento">
-                <option value="">Sem departamento</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
+              <select name="role" defaultValue="DEVELOPER" className="input" aria-label="Papel">{assignableRoles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select>
+              <select name="departmentId" defaultValue="" className="input" aria-label="Departamento"><option value="">Sem departamento</option>{departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
               <button className="btn w-full" disabled={submitting}>Adicionar colaborador</button>
-            </form>
-
-            <form onSubmit={onCreateDepartment} className="card space-y-3 p-5">
-              <div>
-                <p className="eyebrow">Organização</p>
-                <h2 className="mt-1 text-sm font-semibold">Novo departamento</h2>
-              </div>
+            </form>}
+            {canCreate && <form onSubmit={onCreateDepartment} className="card space-y-3 p-5">
+              <div><p className="eyebrow">Organização</p><h2 className="mt-1 text-sm font-semibold">Novo departamento</h2></div>
               <input name="name" placeholder="Ex.: Backend" required minLength={2} maxLength={60} className="input" />
               <button className="btn-ghost w-full" disabled={submitting}>Criar departamento</button>
-            </form>
+            </form>}
           </div>
         )}
       </div>

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { BadRequestException } from '@nestjs/common';
 import { test } from 'node:test';
 import { AuthUser } from '../common/auth-user';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseDataService } from '../supabase/supabase.service';
 import { ChatService } from './chat.service';
 
 const currentUser: AuthUser = {
@@ -11,6 +11,7 @@ const currentUser: AuthUser = {
   role: 'DEVELOPER',
   name: 'Current User',
   email: 'current@example.com',
+  sessionId: 'session-test',
 };
 
 function createService(foundIds: string[]) {
@@ -48,7 +49,7 @@ function createService(foundIds: string[]) {
   };
 
   return {
-    service: new ChatService(prismaMock as unknown as PrismaService),
+    service: new ChatService(prismaMock as unknown as SupabaseDataService),
     getCreatedData: () => createdData,
   };
 }
